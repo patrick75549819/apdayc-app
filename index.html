@@ -58,20 +58,28 @@ body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;}
   <div id="secForm">
     <div id="asientosSecDiv" class="grupo" style="display:none;">
       <div class="label" id="labelAsientos">Asientos</div>
-      <input class="input" id="asientosSec">
+      <input class="input" id="asientosSec" type="number" min="1" step="1" onkeypress="return event.charCode>=48&&event.charCode<=57">
     </div>
-    <div id="m2SecDiv" class="grupo">
+    <div id="nivelGimnasioDiv" class="grupo" style="display:none;">
+<div class="label">Tipo de uso</div>
+<select class="input" id="nivelGimnasio" onchange="actualizarCampos()">
+<option value="0.35">Secundaria (0.35)</option>
+<option value="0.80">Necesaria (0.80)</option>
+</select>
+</div>
+
+<div id="m2SecDiv" class="grupo">
       <div class="label">m²</div>
-      <input class="input" id="m2Sec">
+      <input class="input" id="m2Sec" type="number" min="0" step="0.01">
     </div>
-    <div class="grupo"><div class="label">Horas</div><input class="input" id="horas"></div>
-    <div class="grupo"><div class="label">Días</div><input class="input" id="dias"></div>
+    <div class="grupo"><div class="label">Horas</div><input class="input" id="horas" type="number" min="1" step="1" onkeypress="return event.charCode>=48&&event.charCode<=57"></div>
+    <div class="grupo"><div class="label">Días</div><input class="input" id="dias" type="number" min="1" step="1" onkeypress="return event.charCode>=48&&event.charCode<=57"></div>
   </div>
 
   <!-- INDISPENSABLE -->
   <div id="indForm" style="display:none;">
-    <div class="grupo"><div class="label">Asientos</div><input class="input" id="asientos"></div>
-    <div class="grupo"><div class="label">m²</div><input class="input" id="m2"></div>
+    <div class="grupo"><div class="label">Asientos</div><input class="input" id="asientos" type="number" min="1" step="1" onkeypress="return event.charCode>=48&&event.charCode<=57"></div>
+    <div class="grupo"><div class="label">m²</div><input class="input" id="m2" type="number" min="0" step="0.01"></div>
     <div class="grupo">
       <div class="label">Días</div>
       <select class="input" id="diasSemana">
@@ -96,7 +104,7 @@ body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;}
     </div>
     <div id="precioDiv" class="grupo" style="display:none;">
       <div class="label">Precio entrada</div>
-      <input class="input" id="precio">
+      <input class="input" id="precio" type="number" min="0" step="0.01">
     </div>
   </div>
 
@@ -135,7 +143,13 @@ function actualizarCampos(){
   let esGimnasio = g=="Gimnasio";
   let esHotel = g=="Hotel";
   asientosSecDiv.style.display = (tipo.value=="secundaria" && (esRestaurante||esGimnasio||esHotel))?"block":"none";
-  m2SecDiv.style.display = (tipo.value=="secundaria" && (esRestaurante||esGimnasio||esHotel))?"none":"block";
+  // Gimnasio muestra AMBOS campos (maquinas y m2)
+  if(tipo.value=="secundaria" && esGimnasio){
+    m2SecDiv.style.display = "block";
+  } else {
+    m2SecDiv.style.display = (tipo.value=="secundaria" && (esRestaurante||esHotel))?"none":"block";
+  }
+  nivelGimnasioDiv.style.display = (tipo.value=="secundaria" && esGimnasio)?"block":"none";
   if(esGimnasio){ labelAsientos.innerText="Máquinas"; }
   else if(esHotel){ labelAsientos.innerText="Habitaciones"; }
   else{ labelAsientos.innerText="Asientos"; }
@@ -158,13 +172,45 @@ function porcentaje(m){
 function calcular(){
   if(tipo.value=="secundaria"){
     let base=2.5*0.35;
-    let h=horas.value||0;
-    let d=dias.value||0;
+    let h=Number(horas.value)||0;
+    let d=Number(dias.value)||0;
     let m2Val=Number(m2Sec.value)||0;
-    let val=Number(asientosSec.value||m2Val);
-    if(giro.value=="Hotel"){ val=val*1.5; }
-    let p=porcentaje(m2Val);
-    totalFinal=base*(val*p)*h*d*0.03;
+    let maquinas=Number(asientosSec.value)||0;
+
+    if(giro.value=="Gimnasio"){
+      // base para gimnasio es solo 2.5, el nivel es A separado
+      let vum = 2.5;
+      let p = Number(nivelGimnasio.value); // A: 0.80 o 0.35
+      let totalGimnasio = 0;
+      if(maquinas > 0 && m2Val > 0){
+        // Ambos por separado y se suman
+        let totalMaq = vum * p * (maquinas * 0.60) * h * d * 0.03;
+        let totalM2  = vum * p * (m2Val * porcentaje(m2Val)) * h * d * 0.03;
+        totalGimnasio = totalMaq + totalM2;
+      } else if(maquinas > 0){
+        // Solo maquinas: 60% fijo
+        totalGimnasio = vum * p * (maquinas * 0.60) * h * d * 0.03;
+      } else {
+        // Solo m2: porcentaje segun tabla
+        totalGimnasio = vum * p * (m2Val * porcentaje(m2Val)) * h * d * 0.03;
+      }
+      totalFinal = totalGimnasio;
+    } else {
+      let val=Number(asientosSec.value)||0;
+      let p;
+      if(giro.value=="Restaurante"){
+        // Restaurante: asientos con 60% fijo
+        p = 0.60;
+        if(val==0) val=m2Val; // si no hay asientos usar m2
+      } else if(giro.value=="Hotel"){
+        val = (val||m2Val) * 1.5;
+        p = porcentaje(m2Val);
+      } else {
+        val = val||m2Val;
+        p = porcentaje(m2Val);
+      }
+      totalFinal=base*(val*p)*h*d*0.03;
+    }
   }else{
     let asientosVal=Number(asientos.value)||0;
     let m2Val=Number(m2.value)||0;
@@ -289,7 +335,13 @@ function descargarPDF(){
     ];
   } else {
     let h=Number(horas.value||0); let d=Number(dias.value||0);
-    let m2V=Number(m2Val); let val=Number(asientosVal||m2V);
+    let m2V=Number(m2Val);
+    let val;
+    if(giroVal=="Gimnasio"){
+      val = (Number(asientosVal)||0) + (m2V||0);
+    } else {
+      val = Number(asientosVal) || m2V;
+    }
     if(giroVal=="Hotel") val=val*1.5;
     let p=0.252;
     if(m2V<=15)p=0.60; else if(m2V<=25)p=0.57; else if(m2V<=50)p=0.462; else if(m2V<=100)p=0.342; else if(m2V<=200)p=0.306;
@@ -346,18 +398,28 @@ function descargarPDF(){
     let h = Number(horas.value||0);
     let d = Number(dias.value||0);
     let m2V = Number(m2Val);
-    let val = Number(asientosVal) || m2V;
+    let val;
+    if(giroVal=="Gimnasio"){
+      val = (Number(asientosVal)||0) + (m2V||0);
+    } else {
+      val = Number(asientosVal) || m2V;
+    }
     if(giroVal=="Hotel") val = val * 1.5;
     let p = 0.12;
-    if(m2V<=15)p=0.60; else if(m2V<=25)p=0.57; else if(m2V<=50)p=0.462;
-    else if(m2V<=75)p=0.378; else if(m2V<=100)p=0.342; else if(m2V<=150)p=0.336;
-    else if(m2V<=200)p=0.306; else if(m2V<=250)p=0.288; else if(m2V<=300)p=0.282;
-    else if(m2V<=400)p=0.276; else if(m2V<=500)p=0.252; else if(m2V<=600)p=0.24;
-    else if(m2V<=800)p=0.222; else if(m2V<=1000)p=0.198; else if(m2V<=1500)p=0.168;
-    else if(m2V<=2000)p=0.138;
+    if(giro.value=="Gimnasio"){
+      p = Number(nivelGimnasio.value);
+    } else {
+      if(m2V<=15)p=0.60; else if(m2V<=25)p=0.57; else if(m2V<=50)p=0.462;
+      else if(m2V<=75)p=0.378; else if(m2V<=100)p=0.342; else if(m2V<=150)p=0.336;
+      else if(m2V<=200)p=0.306; else if(m2V<=250)p=0.288; else if(m2V<=300)p=0.282;
+      else if(m2V<=400)p=0.276; else if(m2V<=500)p=0.252; else if(m2V<=600)p=0.24;
+      else if(m2V<=800)p=0.222; else if(m2V<=1000)p=0.198; else if(m2V<=1500)p=0.168;
+      else if(m2V<=2000)p=0.138;
+    }
     let aforoB = (val * 0.60).toFixed(0);
     let horasC = (h * d);
-    colA = p;
+    // colA = nivel de incidencia (siempre 0.35 para secundaria, excepto gimnasio)
+    colA = (giroVal=="Gimnasio") ? Number(nivelGimnasio.value) : 0.35;
     colB = val + ' X 60% = ' + aforoB;
     colC = h + ' X ' + d + ' = ' + horasC;
     colD = 0.03;
