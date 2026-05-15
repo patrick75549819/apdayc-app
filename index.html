@@ -45,9 +45,47 @@ body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center;}
 .login-error{color:#dc2626;font-size:12px;text-align:center;margin-top:8px;display:none;}
 .login-footer{text-align:center;margin-top:16px;font-size:11px;color:#888;}
 
+
+#installBanner{
+  display:none;position:fixed;bottom:0;left:0;width:100%;
+  background:#2f5597;color:white;padding:14px 16px;
+  z-index:99999;box-shadow:0 -2px 10px rgba(0,0,0,0.3);
+  font-family:Arial;
+}
+#installBanner .banner-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  max-width:380px;margin:0 auto;
+}
+#installBanner .banner-text{font-size:13px;font-weight:700;}
+#installBanner .banner-sub{font-size:11px;opacity:0.85;margin-top:2px;}
+#installBanner .banner-btns{display:flex;gap:8px;align-items:center;}
+#installBanner .btn-install{
+  background:white;color:#2f5597;border:none;
+  padding:8px 16px;border-radius:6px;font-weight:700;
+  font-size:13px;cursor:pointer;white-space:nowrap;
+}
+#installBanner .btn-close{
+  background:transparent;border:none;color:white;
+  font-size:20px;cursor:pointer;padding:0 4px;opacity:0.8;
+}
+
 </style>
 </head>
 <body>
+
+
+<div id="installBanner">
+  <div class="banner-inner">
+    <div>
+      <div class="banner-text">📲 Instalar APDAYC</div>
+      <div class="banner-sub">Agregar a pantalla de inicio</div>
+    </div>
+    <div class="banner-btns">
+      <button class="btn-install" id="btnInstall">Instalar</button>
+      <button class="btn-close" onclick="cerrarBanner()">✕</button>
+    </div>
+  </div>
+</div>
 
 <div id="loginScreen">
   <div class="login-box">
@@ -586,5 +624,34 @@ function initFirebase(){
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" onload="initFirebase()"></script>
+
+<script>
+var deferredPrompt;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'block';
+});
+
+document.getElementById('btnInstall').addEventListener('click', function(){
+  document.getElementById('installBanner').style.display = 'none';
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function(result){
+      deferredPrompt = null;
+    });
+  }
+});
+
+function cerrarBanner(){
+  document.getElementById('installBanner').style.display = 'none';
+  localStorage.setItem('bannerClosed','1');
+}
+
+window.addEventListener('appinstalled', function(){
+  document.getElementById('installBanner').style.display = 'none';
+});
+</script>
+
 </body>
 </html>
