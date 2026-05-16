@@ -10,7 +10,14 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2f5597">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center}.container{width:100%;max-width:380px;padding:20px}.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-left:-20px;margin-right:-20px}.logo-img{height:70px;width:160px;object-fit:contain}.titulo{color:#2f5597;text-align:center;font-size:26px}.linea{width:60%;height:2px;background:#2f5597;margin:10px auto 20px auto}.grupo{margin-bottom:12px}.label{background:#ffffff;padding:12px;border:2px solid #2f5597;text-align:center;font-weight:bold;color:#1a1a2e}.input{width:100%;padding:12px;border:2px solid #2f5597;text-align:center;background:#ffffff;color:#1a1a2e;text-transform:uppercase}.boton{width:100%;padding:14px;margin-top:10px;border:2px solid #2f5597;background:#2f5597;color:white;font-weight:bold;cursor:pointer}.resultado{color:#2f5597;text-align:center;font-size:22px;margin-top:12px;font-weight:bold}#loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f2f5;display:flex;justify-content:center;align-items:center;z-index:9999;flex-direction:column}.login-box{background:white;border-radius:12px;padding:32px 28px;width:320px;border:2px solid #2f5597}.login-logo{text-align:center;margin-bottom:20px}.login-logo div:first-child{font-size:22px;font-weight:900;color:#2f5597;letter-spacing:1px}.login-logo div:last-child{font-size:11px;color:#2f5597;font-weight:700}.login-title{color:#2f5597;text-align:center;font-size:16px;font-weight:700;margin-bottom:20px}.login-input{width:100%;padding:12px;border:2px solid #2f5597;margin-bottom:12px;border-radius:4px;font-size:14px;box-sizing:border-box;text-align:left !important;text-transform:none !important}.login-btn{width:100%;padding:14px;background:#2f5597;color:white;border:none;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px}.login-btn:hover{background:#1e3a6e}.login-error{color:#dc2626;font-size:12px;text-align:center;margin-top:8px;display:none}.login-footer{text-align:center;margin-top:16px;font-size:11px;color:#888}#installBanner{display:none;position:fixed;bottom:0;left:0;width:100%;background:#2f5597;color:white;padding:14px 16px;z-index:99999;box-shadow:0 -2px 10px rgba(0,0,0,0.3);font-family:Arial}#installBanner .banner-inner{display:flex;align-items:center;justify-content:space-between;max-width:380px;margin:0 auto}#installBanner .banner-text{font-size:13px;font-weight:700}#installBanner .banner-sub{font-size:11px;opacity:0.85;margin-top:2px}#installBanner .banner-btns{display:flex;gap:8px;align-items:center}#installBanner .btn-install{background:white;color:#2f5597;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}#installBanner .btn-close{background:transparent;border:none;color:white;font-size:20px;cursor:pointer;padding:0 4px;opacity:0.8}</style>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial;background:#f0f2f5;display:flex;justify-content:center}.container{width:100%;max-width:380px;padding:20px}.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-left:-20px;margin-right:-20px}.logo-img{height:70px;width:160px;object-fit:contain}.titulo{color:#2f5597;text-align:center;font-size:26px}.linea{width:60%;height:2px;background:#2f5597;margin:10px auto 20px auto}.grupo{margin-bottom:12px}.label{background:#ffffff;padding:12px;border:2px solid #2f5597;text-align:center;font-weight:bold;color:#1a1a2e}.input{width:100%;padding:12px;border:2px solid #2f5597;text-align:center;background:#ffffff;color:#1a1a2e;text-transform:uppercase}.boton{width:100%;padding:14px;margin-top:10px;border:2px solid #2f5597;background:#2f5597;color:white;font-weight:bold;cursor:pointer}.resultado{color:#2f5597;text-align:center;font-size:22px;margin-top:12px;font-weight:bold}#loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f2f5;display:flex;justify-content:center;align-items:center;z-index:9999;flex-direction:column}.login-box{background:white;border-radius:12px;padding:32px 28px;width:320px;border:2px solid #2f5597}.login-logo{text-align:center;margin-bottom:20px}.login-logo div:first-child{font-size:22px;font-weight:900;color:#2f5597;letter-spacing:1px}.login-logo div:last-child{font-size:11px;color:#2f5597;font-weight:700}.login-title{color:#2f5597;text-align:center;font-size:16px;font-weight:700;margin-bottom:20px}.login-input{width:100%;padding:12px;border:2px solid #2f5597;margin-bottom:12px;border-radius:4px;font-size:14px;box-sizing:border-box;text-align:left !important;text-transform:none !important}.login-btn{width:100%;padding:14px;background:#2f5597;color:white;border:none;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;margin-top:4px}.login-btn:hover{background:#1e3a6e}.login-error{color:#dc2626;font-size:12px;text-align:center;margin-top:8px;display:none}.login-footer{text-align:center;margin-top:16px;font-size:11px;color:#888}#installBanner{display:none;position:fixed;bottom:0;left:0;width:100%;background:#2f5597;color:white;padding:14px 16px;z-index:99999;box-shadow:0 -2px 10px rgba(0,0,0,0.3);font-family:Arial}#installBanner .banner-inner{display:flex;align-items:center;justify-content:space-between;max-width:380px;margin:0 auto}#installBanner .banner-text{font-size:13px;font-weight:700}#installBanner .banner-sub{font-size:11px;opacity:0.85;margin-top:2px}#installBanner .banner-btns{display:flex;gap:8px;align-items:center}#installBanner .btn-install{background:white;color:#2f5597;border:none;padding:8px 16px;border-radius:6px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}#installBanner .btn-close{background:transparent;border:none;color:white;font-size:20px;cursor:pointer;padding:0 4px;opacity:0.8}
+.pass-wrapper{position:relative;width:100%;display:flex;align-items:center;}
+.pass-wrapper .login-input{width:100%;padding-right:44px;}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+background:none;border:none;cursor:pointer;color:#2f5597;font-size:20px;padding:0;
+display:flex;align-items:center;justify-content:center;height:100%;}
+
+</style>
 <script>
 document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
 document.addEventListener('keydown',function(e){
@@ -41,7 +48,10 @@ document.addEventListener('keydown',function(e){
     </div>
     <div class="login-title">Iniciar sesión</div>
     <input class="login-input" type="email" id="loginEmail" placeholder="Correo electrónico">
-    <input class="login-input" type="password" id="loginPass" placeholder="Contraseña">
+    <div class="pass-wrapper">
+<input class="login-input" type="password" id="loginPass" placeholder="Contraseña">
+<button class="eye-btn" type="button" onclick="togglePass()" id="eyeBtn">👁</button>
+</div>
     <button class="login-btn" onclick="iniciarSesion()">Ingresar</button>
     <div class="login-error" id="loginError">Correo o contraseña incorrectos</div>
     <div class="login-footer">Acceso solo para usuarios autorizados</div>
@@ -459,6 +469,17 @@ window.onload=cargarGiros;</script>
 </div></div>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" onload="jspdfLoaded=true"></script>
 <script>var auth;
+function togglePass(){
+var input=document.getElementById('loginPass');
+var btn=document.getElementById('eyeBtn');
+if(input.type==='password'){
+input.type='text';
+btn.innerHTML='🙈';
+} else {
+input.type='password';
+btn.innerHTML='👁';
+}
+}
 function iniciarSesion(){
 var email=document.getElementById('loginEmail').value;
 var pass=document.getElementById('loginPass').value;
@@ -470,6 +491,15 @@ err.innerText=e.code=='auth/user-disabled'?'Cuenta desactivada. Contacta al admi
 });
 }
 function cerrarSesion(){ auth.signOut(); }
+function getDeviceId(){
+var id=localStorage.getItem('deviceId');
+if(!id){
+id='dev_'+Math.random().toString(36).substr(2,9)+'_'+Date.now();
+localStorage.setItem('deviceId',id);
+}
+return id;
+}
+
 function initFirebase(){
 firebase.initializeApp({
 apiKey:"AIzaSyALj3mQpEt0KOMUQTxBmupF20HRlw-Jcmc",
@@ -480,13 +510,40 @@ messagingSenderId:"1053676584351",
 appId:"1:1053676584351:web:bd67b5133c64fb8bfa11aa"
 });
 auth=firebase.auth();
+var db=firebase.firestore();
 auth.onAuthStateChanged(function(user){
-document.getElementById('loginScreen').style.display=user?'none':'flex';
-document.getElementById('appContent').style.display=user?'block':'none';
+if(user){
+var deviceId=getDeviceId();
+var userRef=db.collection('dispositivos').doc(user.uid);
+userRef.get().then(function(doc){
+if(doc.exists){
+var savedDevice=doc.data().deviceId;
+if(savedDevice===deviceId){
+document.getElementById('loginScreen').style.display='none';
+document.getElementById('appContent').style.display='block';
+} else {
+auth.signOut();
+var err=document.getElementById('loginError');
+err.style.display='block';
+err.innerText='Este usuario ya esta registrado en otro dispositivo. Contacta al administrador.';
+document.getElementById('loginScreen').style.display='flex';
+document.getElementById('appContent').style.display='none';
+}
+} else {
+userRef.set({deviceId:deviceId,email:user.email,fecha:new Date().toISOString()});
+document.getElementById('loginScreen').style.display='none';
+document.getElementById('appContent').style.display='block';
+}
+});
+} else {
+document.getElementById('loginScreen').style.display='flex';
+document.getElementById('appContent').style.display='none';
+}
 });
 }</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js" onload="initFirebase()"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" onload="initFirebase()"></script>
 <script>var deferredPrompt;
 window.addEventListener('beforeinstallprompt', function(e){
 e.preventDefault();
