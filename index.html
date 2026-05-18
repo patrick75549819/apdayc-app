@@ -75,8 +75,8 @@ document.addEventListener('keydown',function(e){
       <option value="indispensable">Indispensable</option>
     </select>
   </div>
-  <div class="grupo"><div class="label">Nombre</div><input class="input"></div>
-  <div class="grupo"><div class="label">Dirección</div><input class="input"></div>
+  <div class="grupo"><div class="label">Nombre</div><input class="input" id="nombreInput"></div>
+  <div class="grupo"><div class="label">Dirección</div><input class="input" id="direccionInput"></div>
   <div class="grupo">
     <div class="label">Giro</div>
     <select class="input" id="giro" onchange="actualizarCampos()"></select>
@@ -130,7 +130,14 @@ document.addEventListener('keydown',function(e){
       <input class="input" id="precio" type="number" min="0" step="0.01">
     </div>
   </div>
-  <button class="boton" onclick="calcular()">Calcular Tarifa</button>
+  <div class="grupo">
+<div class="label">Tipo de Pago</div>
+<select class="input" id="tipoPago">
+<option value="mensual">Mensual</option>
+<option value="anual">Anual (12 meses - 11% descuento)</option>
+</select>
+</div>
+<button class="boton" onclick="calcular()">Calcular Tarifa</button>
   <div id="resultado" class="resultado">S/ 0.00</div>
   <button class="boton" onclick="descargarPDF()">Exportar PDF</button>
 </div>
@@ -227,14 +234,18 @@ let factor=(entradaTipo.value=="sin")?0.08:0.05;
 let diasMes=[0,5,9,13,18,22,25,30][diasSemana.value];
 totalFinal=aforo60*entrada*diasMes*factor;
 }
+var tipoPagoVal = document.getElementById('tipoPago').value;
+if(tipoPagoVal === 'anual'){
+  totalFinal = totalFinal * 12 * 0.89;
+}
 resultado.innerText="S/ "+Number(totalFinal).toFixed(2);
 }
 function descargarPDF(){
 const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
 const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
 let tipoTexto = tipo.value=="secundaria"?"SECUNDARIA":"INDISPENSABLE";
-let nombreVal = document.querySelectorAll('.input')[1].value || '—';
-let direccionVal = document.querySelectorAll('.input')[2].value || '—';
+let nombreVal = document.getElementById('nombreInput').value || '—';
+let direccionVal = document.getElementById('direccionInput').value || '—';
 let giroVal = giro.value;
 let hoy = new Date();
 let fecha = hoy.toLocaleDateString('es-PE', {day:'numeric', month:'long', year:'numeric'});
@@ -280,10 +291,10 @@ return yPos + 2;
 }
 y += 8;
 y = seccion('Datos del establecimiento', [
-['Nombre', nombreVal],
-['Dirección', direccionVal],
-['Tipo', tipoTexto],
-['Giro', giroVal]
+['Nombre', nombreVal.toUpperCase()],
+['Dirección', direccionVal.toUpperCase()],
+['Tipo', tipoTexto.toUpperCase()],
+['Giro', giroVal.toUpperCase()]
 ], y);
 y += 3;
 let diasTexto = '';
@@ -297,12 +308,30 @@ entradaTexto = entradaTipo.value=="sin" ? "Sin costo (S/ 7.50 fijo)" : "Con cost
 diasTexto = (dias.value||0) + ' días';
 entradaTexto = '—';
 }
-y = seccion('Parámetros ingresados', [
-['Asientos', asientosVal],
-['m²', m2Val],
-['Días', diasTexto],
-['Entrada', entradaTexto]
-], y);
+let tipoPagoLabel = document.getElementById('tipoPago').value=='anual'?'ANUAL (12 MESES - 11% DCTO)':'MENSUAL';
+
+// Nombre del campo segun giro
+let labelAforo = 'Asientos';
+if(giroVal=='Gimnasio') labelAforo = 'Máquinas';
+else if(giroVal=='Hotel') labelAforo = 'Habitaciones';
+
+// Solo mostrar filas con valores ingresados
+let filaParams = [];
+if(tipo.value=='secundaria'){
+  if(Number(asientosVal)>0) filaParams.push([labelAforo, asientosVal]);
+  if(Number(m2Val)>0) filaParams.push(['m²', m2Val]);
+  filaParams.push(['Horas al día', Number(horas.value)||0]);
+  filaParams.push(['Días', diasTexto]);
+  if(giroVal=='Gimnasio') filaParams.push(['Tipo de uso', document.getElementById('nivelGimnasio').options[document.getElementById('nivelGimnasio').selectedIndex].text]);
+} else {
+  if(Number(asientosVal)>0) filaParams.push([labelAforo, asientosVal]);
+  if(Number(m2Val)>0) filaParams.push(['m²', m2Val]);
+  filaParams.push(['Días', diasTexto]);
+  filaParams.push(['Entrada', entradaTexto]);
+}
+filaParams.push(['Tipo de Pago', tipoPagoLabel]);
+
+y = seccion('Parámetros ingresados', filaParams, y);
 y += 3;
 let filas3 = [];
 if(tipo.value=="indispensable"){
