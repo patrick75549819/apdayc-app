@@ -134,7 +134,8 @@ document.addEventListener('keydown',function(e){
 <div class="label">Tipo de Pago</div>
 <select class="input" id="tipoPago">
 <option value="mensual">Mensual</option>
-<option value="anual">Anual (12 meses - 11% descuento)</option>
+<option value="anual11">Anual (12 meses - 11% descuento)</option>
+<option value="anual13">Anual (12 meses - 13% descuento)</option>
 </select>
 </div>
 <button class="boton" onclick="calcular()">Calcular Tarifa</button>
@@ -235,8 +236,10 @@ let diasMes=[0,5,9,13,18,22,25,30][diasSemana.value];
 totalFinal=aforo60*entrada*diasMes*factor;
 }
 var tipoPagoVal = document.getElementById('tipoPago').value;
-if(tipoPagoVal === 'anual'){
+if(tipoPagoVal === 'anual11'){
   totalFinal = totalFinal * 12 * 0.89;
+} else if(tipoPagoVal === 'anual13'){
+  totalFinal = totalFinal * 12 * 0.87;
 }
 resultado.innerText="S/ "+Number(totalFinal).toFixed(2);
 }
@@ -308,7 +311,8 @@ entradaTexto = entradaTipo.value=="sin" ? "Sin costo (S/ 7.50 fijo)" : "Con cost
 diasTexto = (dias.value||0) + ' días';
 entradaTexto = '—';
 }
-let tipoPagoLabel = document.getElementById('tipoPago').value=='anual'?'ANUAL (12 MESES - 11% DCTO)':'MENSUAL';
+let _tp = document.getElementById('tipoPago').value;
+let tipoPagoLabel = _tp=='anual11'?'ANUAL (12 MESES - 11% DCTO)':_tp=='anual13'?'ANUAL (12 MESES - 13% DCTO)':'MENSUAL';
 
 // Nombre del campo segun giro
 let labelAforo = 'Asientos';
