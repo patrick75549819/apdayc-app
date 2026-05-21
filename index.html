@@ -17,6 +17,49 @@
 background:none;border:none;cursor:pointer;color:#2f5597;font-size:20px;padding:0;
 display:flex;align-items:center;justify-content:center;height:100%;}
 
+
+#menuBtn{position:fixed;top:12px;left:12px;z-index:10000;background:#2f5597;
+border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:white;font-size:18px;}
+#sideMenu{position:fixed;top:0;left:-280px;width:280px;height:100%;background:#fff;
+z-index:9998;box-shadow:4px 0 20px rgba(0,0,0,0.2);transition:left 0.3s;font-family:Arial;}
+#sideMenu.open{left:0;}
+#menuOverlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,0.4);z-index:9997;}
+#menuOverlay.open{display:block;}
+.menu-header{background:#2f5597;padding:24px 16px 16px;color:white;}
+.menu-header div:first-child{font-size:16px;font-weight:900;letter-spacing:1px;}
+.menu-header div:last-child{font-size:11px;opacity:0.8;margin-top:4px;}
+.menu-item{padding:16px;border-bottom:1px solid #f0f0f0;cursor:pointer;
+display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;color:#1a1a2e;}
+.menu-item:hover{background:#f0f2f5;}
+.menu-item span{font-size:20px;}
+
+#consultaPanel{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+background:#f0f2f5;z-index:9999;overflow-y:auto;font-family:Arial;}
+.consulta-header{background:#2f5597;padding:16px;display:flex;align-items:center;gap:12px;}
+.consulta-header button{background:none;border:none;color:white;font-size:20px;cursor:pointer;}
+.consulta-header div{color:white;font-size:16px;font-weight:700;}
+.consulta-body{padding:16px;}
+.consulta-input-box{background:white;border:2px solid #2f5597;border-radius:8px;
+padding:12px;margin-bottom:12px;}
+.consulta-input-box input{width:100%;border:none;outline:none;font-size:14px;
+box-sizing:border-box;text-transform:uppercase;}
+.consulta-btn{width:100%;background:#2f5597;color:white;border:none;padding:14px;
+border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:16px;}
+.resultado-local{background:white;border-radius:8px;padding:16px;margin-bottom:12px;
+border-left:4px solid #2f5597;}
+.local-nombre{font-size:14px;font-weight:700;color:#2f5597;margin-bottom:4px;}
+.local-info{font-size:11px;color:#888;margin-bottom:12px;}
+.mes-item{display:flex;justify-content:space-between;align-items:center;
+padding:8px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
+.mes-item:last-child{border-bottom:none;}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-cobrado{background:#d1fae5;color:#065f46;}
+.badge-pendiente{background:#fee2e2;color:#991b1b;}
+.badge-anulado{background:#e5e7eb;color:#374151;}
+.no-result{text-align:center;color:#888;padding:40px 16px;font-size:14px;}
+.loading{text-align:center;color:#2f5597;padding:40px 16px;font-size:14px;}
+
 </style>
 <script>
 document.addEventListener('contextmenu',function(e){e.preventDefault();return false;});
@@ -619,5 +662,153 @@ localStorage.setItem('bannerClosed','1');
 window.addEventListener('appinstalled', function(){
 document.getElementById('installBanner').style.display = 'none';
 });</script>
+
+<script>
+var CSV_URLS = [
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=1427147966&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOcmqXkioSv7zl1AVIqYyT14MNDbwj_yOSr_eb1CHnRlZwzIFvud9DocTmbENSzvMP_v457EgRDBrg/pub?gid=705642728&single=true&output=csv'
+];
+
+function toggleMenu(){
+  document.getElementById('sideMenu').classList.toggle('open');
+  document.getElementById('menuOverlay').classList.toggle('open');
+}
+
+function abrirConsulta(){
+  toggleMenu();
+  document.getElementById('consultaPanel').style.display='block';
+  document.getElementById('busquedaInput').focus();
+}
+
+function cerrarConsulta(){
+  document.getElementById('consultaPanel').style.display='none';
+  document.getElementById('resultadoConsulta').innerHTML='';
+  document.getElementById('busquedaInput').value='';
+}
+
+function parseCSV(text){
+  var lines = text.split('\n');
+  var headers = [];
+  var rows = [];
+  // Find header row (row with 'Id Licencia')
+  var headerIdx = -1;
+  for(var i=0;i<lines.length;i++){
+    if(lines[i].indexOf('Id Licencia')>-1 || lines[i].indexOf('Licencia')>-1){
+      headerIdx=i; break;
+    }
+  }
+  if(headerIdx==-1) return [];
+  
+  headers = parseCSVLine(lines[headerIdx]);
+  
+  for(var i=headerIdx+1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    var cols = parseCSVLine(lines[i]);
+    var row = {};
+    headers.forEach(function(h,idx){ row[h.trim()] = cols[idx]||''; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseCSVLine(line){
+  var result=[], current='', inQuotes=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){ inQuotes=!inQuotes; }
+    else if(c===','&&!inQuotes){ result.push(current.trim()); current=''; }
+    else{ current+=c; }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function formatPeriodo(p){
+  if(!p) return '';
+  // Handle date format
+  var meses=['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  var d = new Date(p);
+  if(!isNaN(d.getTime())){
+    return meses[d.getMonth()+1]+' '+d.getFullYear();
+  }
+  return p;
+}
+
+function getBadge(status){
+  var s=(status||'').toUpperCase().trim();
+  if(s==='COBRADA') return '<span class="badge badge-cobrado">✅ COBRADO</span>';
+  if(s==='PENDIENTE') return '<span class="badge badge-pendiente">⏳ PENDIENTE</span>';
+  if(s==='LEGAL') return '<span class="badge badge-pendiente">⏳ PENDIENTE</span>';
+  if(s==='ANULADA') return '<span class="badge badge-anulado">❌ ANULADA</span>';
+  return '<span class="badge badge-pendiente">⏳ '+s+'</span>';
+}
+
+async function buscarLicencia(){
+  var query = document.getElementById('busquedaInput').value.trim().toUpperCase();
+  var div = document.getElementById('resultadoConsulta');
+  if(!query){ div.innerHTML='<div class="no-result">Ingresa un ID de licencia o RUC</div>'; return; }
+  
+  div.innerHTML='<div class="loading">🔍 Buscando...</div>';
+  
+  try{
+    var allRows = [];
+    for(var u=0;u<CSV_URLS.length;u++){
+      var resp = await fetch(CSV_URLS[u]);
+      var text = await resp.text();
+      var rows = parseCSV(text);
+      allRows = allRows.concat(rows);
+    }
+    
+    // Filter by licencia or RUC
+    var found = allRows.filter(function(r){
+      var lic = String(r['Id Licencia']||'').trim();
+      var ruc = String(r['Ruc']||'').trim();
+      return lic===query || ruc===query || 
+             lic.toUpperCase()===query || ruc.toUpperCase()===query;
+    });
+    
+    if(found.length===0){
+      div.innerHTML='<div class="no-result">❌ No se encontraron resultados para <b>'+query+'</b></div>';
+      return;
+    }
+    
+    // Group by licencia
+    var grupos = {};
+    found.forEach(function(r){
+      var key = r['Id Licencia']||r['Ruc'];
+      if(!grupos[key]) grupos[key]={info:r, meses:[]};
+      grupos[key].meses.push(r);
+    });
+    
+    var html='';
+    Object.keys(grupos).forEach(function(key){
+      var g=grupos[key];
+      var info=g.info;
+      html+='<div class="resultado-local">';
+      html+='<div class="local-nombre">'+(info['Establecimiento']||info['Nombre ó Razon Social']||'')+'</div>';
+      html+='<div class="local-info">RUC: '+(info['Ruc']||'—')+' | Licencia: '+(info['Id Licencia']||'—')+'<br>';
+      html+=(info['Distrito']||'')+(info['Dirección']?(' — '+info['Dirección']):'')+'</div>';
+      
+      // Sort by periodo
+      g.meses.sort(function(a,b){ return new Date(a['Periodo'])-new Date(b['Periodo']); });
+      
+      g.meses.forEach(function(m){
+        html+='<div class="mes-item">';
+        html+='<span>'+formatPeriodo(m['Periodo'])+'</span>';
+        html+=getBadge(m['Status de factura']);
+        html+='</div>';
+      });
+      html+='</div>';
+    });
+    
+    div.innerHTML=html;
+    
+  }catch(e){
+    div.innerHTML='<div class="no-result">❌ Error al cargar datos. Verifica tu conexión.</div>';
+    console.error(e);
+  }
+}
+</script>
+
 </body>
 </html>
