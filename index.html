@@ -71,6 +71,36 @@ document.addEventListener('keydown',function(e){
 </script>
 </head>
 <body>
+<button id="menuBtn" onclick="toggleMenu()" style="display:none;">☰</button>
+
+<div id="menuOverlay" onclick="toggleMenu()"></div>
+<div id="sideMenu">
+  <div class="menu-header">
+    <div>APDAYC</div>
+    <div>GCI Servicios Financieros</div>
+  </div>
+  <div class="menu-item" onclick="abrirConsulta()">
+    <span>🔍</span> Consultar Licencia
+  </div>
+  <div class="menu-item" onclick="toggleMenu();cerrarSesion()">
+    <span>🚪</span> Cerrar sesión
+  </div>
+</div>
+
+<div id="consultaPanel">
+  <div class="consulta-header">
+    <button onclick="cerrarConsulta()">←</button>
+    <div>Consultar Licencia</div>
+  </div>
+  <div class="consulta-body">
+    <div class="consulta-input-box">
+      <input type="text" id="busquedaInput" placeholder="ID LICENCIA O RUC"
+        onkeypress="if(event.key==='Enter') buscarLicencia()">
+    </div>
+    <button class="consulta-btn" onclick="buscarLicencia()">🔍 Buscar</button>
+    <div id="resultadoConsulta"></div>
+  </div>
+</div>
 <div id="installBanner">
   <div class="banner-inner">
     <div>
@@ -619,6 +649,7 @@ var savedDevice=doc.data().deviceId;
 if(savedDevice===deviceId){
 document.getElementById('loginScreen').style.display='none';
 document.getElementById('appContent').style.display='block';
+document.getElementById('menuBtn').style.display='block';
 } else {
 auth.signOut();
 var err=document.getElementById('loginError');
@@ -626,11 +657,13 @@ err.style.display='block';
 err.innerText='Este usuario ya esta registrado en otro dispositivo. Contacta al administrador.';
 document.getElementById('loginScreen').style.display='flex';
 document.getElementById('appContent').style.display='none';
+document.getElementById('menuBtn').style.display='none';
 }
 } else {
 userRef.set({deviceId:deviceId,email:user.email,fecha:new Date().toISOString()});
 document.getElementById('loginScreen').style.display='none';
 document.getElementById('appContent').style.display='block';
+document.getElementById('menuBtn').style.display='block';
 }
 });
 } else {
