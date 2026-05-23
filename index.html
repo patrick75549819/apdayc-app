@@ -872,13 +872,35 @@ function parseCSVLine(line){
 
 function formatPeriodo(p){
   if(!p) return '';
-  // Handle date format
-  var meses=['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-  var d = new Date(p);
-  if(!isNaN(d.getTime())){
-    return meses[d.getMonth()+1]+' '+d.getFullYear();
+  p = String(p).trim();
+
+  // If already in format like "ABR-26" or "ENE-25" return as is uppercase
+  if(/^[A-Za-záéíóúÁÉÍÓÚ]{3}-\d{2}$/.test(p)){
+    return p.toUpperCase();
   }
-  return p;
+
+  // If text month format like "ABR 2026"
+  if(/^[A-Za-záéíóúÁÉÍÓÚ]{3}[\s-]\d{2,4}$/.test(p)){
+    return p.toUpperCase();
+  }
+
+  // If numeric date from Google Sheets (serial number)
+  var num = Number(p);
+  if(!isNaN(num) && num > 40000){
+    var meses=['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    // Excel serial to JS date
+    var d = new Date((num - 25569) * 86400 * 1000);
+    return meses[d.getUTCMonth()+1]+'-'+String(d.getUTCFullYear()).slice(2);
+  }
+
+  // Try parsing as date string
+  var d2 = new Date(p);
+  if(!isNaN(d2.getTime()) && d2.getFullYear() > 2000){
+    var meses2=['','ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    return meses2[d2.getMonth()+1]+'-'+String(d2.getFullYear()).slice(2);
+  }
+
+  return p.toUpperCase();
 }
 
 function getBadge(status){
