@@ -236,6 +236,8 @@ document.addEventListener('keydown',function(e){
 <option value="mensual">Mensual</option>
 <option value="anual11">Anual (12 meses - 11% descuento)</option>
 <option value="anual13">Anual (12 meses - 13% descuento)</option>
+<option value="membresia11">Membresía + Anual 11%</option>
+<option value="membresia13">Membresía + Anual 13%</option>
 </select>
 </div>
 <button class="boton" onclick="calcular()">Calcular Tarifa</button>
@@ -336,11 +338,17 @@ let diasMes=[0,5,9,13,18,22,25,30][diasSemana.value];
 totalFinal=aforo60*entrada*diasMes*factor;
 }
 var tipoPagoVal = document.getElementById('tipoPago').value;
+var mensualBase = totalFinal;
 if(tipoPagoVal === 'anual11'){
-  totalFinal = totalFinal * 12 * 0.89;
+  totalFinal = mensualBase * 12 * 0.89;
 } else if(tipoPagoVal === 'anual13'){
-  totalFinal = totalFinal * 12 * 0.87;
+  totalFinal = mensualBase * 12 * 0.87;
+} else if(tipoPagoVal === 'membresia11'){
+  totalFinal = mensualBase + (mensualBase * 12 * 0.89);
+} else if(tipoPagoVal === 'membresia13'){
+  totalFinal = mensualBase + (mensualBase * 12 * 0.87);
 }
+window._mensualBase = mensualBase;
 resultado.innerText="S/ "+Number(totalFinal).toFixed(2);
 }
 function descargarPDF(){
@@ -412,7 +420,10 @@ diasTexto = (dias.value||0) + ' días';
 entradaTexto = '—';
 }
 let _tp = document.getElementById('tipoPago').value;
-let tipoPagoLabel = _tp=='anual11'?'ANUAL (12 MESES - 11% DCTO)':_tp=='anual13'?'ANUAL (12 MESES - 13% DCTO)':'MENSUAL';
+let tipoPagoLabel = _tp=='anual11'?'ANUAL (12 MESES - 11% DCTO)':
+  _tp=='anual13'?'ANUAL (12 MESES - 13% DCTO)':
+  _tp=='membresia11'?'MEMBRESÍA + ANUAL (11% DCTO)':
+  _tp=='membresia13'?'MEMBRESÍA + ANUAL (13% DCTO)':'MENSUAL';
 
 // Nombre del campo segun giro
 let labelAforo = 'Asientos';
@@ -571,9 +582,52 @@ doc.line(margin+cw, y-10, margin+cw, y+12);
 y += 14;
 y += 4;
 doc.setDrawColor(...azul); doc.setLineWidth(0.8);
+// Desglose anual si aplica
+let _tp2 = document.getElementById('tipoPago').value;
+let _base = window._mensualBase || 0;
+if(_tp2!=='mensual' && _base>0){
+  let _dcto = (_tp2==='anual11'||_tp2==='membresia11') ? 11 : 13;
+  let _factor = 1 - _dcto/100;
+  let _anual = _base * 12 * _factor;
+  doc.setFillColor(...gris);
+  doc.roundedRect(margin, y, cw, _tp2.startsWith('membresia')?42:36, 2, 2, 'F');
+  y += 6;
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
+  doc.text('DESGLOSE DE PAGO', margin+4, y);
+  y += 6;
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(...negro);
+  doc.text('Tarifa mensual:', margin+4, y);
+  doc.setFont('helvetica','bold');
+  doc.text('S/ '+_base.toFixed(2), w-margin-4, y, {align:'right'});
+  y += 6;
+  doc.setFont('helvetica','normal');
+  doc.text('x 12 meses:', margin+4, y);
+  doc.setFont('helvetica','bold');
+  doc.text('S/ '+(_base*12).toFixed(2), w-margin-4, y, {align:'right'});
+  y += 6;
+  doc.setFont('helvetica','normal'); doc.setTextColor(220,0,0);
+  doc.text('Descuento '+_dcto+'%:', margin+4, y);
+  doc.setFont('helvetica','bold');
+  doc.text('- S/ '+(_base*12*(_dcto/100)).toFixed(2), w-margin-4, y, {align:'right'});
+  y += 6;
+  if(_tp2.startsWith('membresia')){
+    doc.setTextColor(...negro); doc.setFont('helvetica','normal');
+    doc.text('Pago anual con dcto:', margin+4, y);
+    doc.setFont('helvetica','bold');
+    doc.text('S/ '+_anual.toFixed(2), w-margin-4, y, {align:'right'});
+    y += 6;
+    doc.setFont('helvetica','normal');
+    doc.text('+ 1 mensualidad:', margin+4, y);
+    doc.setFont('helvetica','bold');
+    doc.text('S/ '+_base.toFixed(2), w-margin-4, y, {align:'right'});
+    y += 6;
+  }
+  y += 4;
+}
+
 doc.roundedRect(margin, y, cw, 22, 3, 3, 'S');
 doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
-doc.text('TARIFA MENSUAL A PAGAR', w/2, y+8, {align:'center'});
+doc.text('TARIFA TOTAL A PAGAR', w/2, y+8, {align:'center'});
 doc.setFontSize(22); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
 doc.text(resultado.innerText, w/2, y+18, {align:'center'});
 y += 30;
@@ -725,8 +779,8 @@ document.getElementById('installBanner').style.display = 'none';
 
 <script>
 var CSV_URLS = [
-  'https://docs.google.com/spreadsheets/d/1vcMsRqX_s0V8BsXV4Euah9Sc40qFGQRjV9Vk2lQJgts/export?format=csv&gid=1094281274',
-  'https://docs.google.com/spreadsheets/d/15zK1MOnT9jXdTtmGbKTS_MnLDueRxhE5-Mk8QywJGY4/export?format=csv&gid=705642728'
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=1062433056&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOcmqXkioSv7zl1AVIqYyT14MNDbwj_yOSr_eb1CHnRlZwzIFvud9DocTmbENSzvMP_v457EgRDBrg/pub?gid=539502693&single=true&output=csv'
 ];
 
 function mostrarCalculo(){
