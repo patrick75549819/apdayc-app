@@ -1441,8 +1441,11 @@ function initFirebase(){
             if(app) app.style.display='block';
             var pe=document.getElementById('profileEmail');
             var ue=document.getElementById('userEmailDisplay');
+            var ug=document.getElementById('userGreeting');
             if(pe) pe.innerText=user.email;
             if(ue) ue.innerText='GCI Servicios Financieros';
+            var nombre=USUARIOS[user.email.toLowerCase()]||user.email.split('@')[0];
+            if(ug) ug.innerText='¡Bienvenido, '+nombre+'! 👋';
           } else {
             auth.signOut();
             var err=document.getElementById('loginError');
@@ -1454,8 +1457,11 @@ function initFirebase(){
           if(app) app.style.display='block';
           var pe2=document.getElementById('profileEmail');
           var ue2=document.getElementById('userEmailDisplay');
+          var ug2=document.getElementById('userGreeting');
           if(pe2) pe2.innerText=user.email;
           if(ue2) ue2.innerText='GCI Servicios Financieros';
+          var nombre2=USUARIOS[user.email.toLowerCase()]||user.email.split('@')[0];
+          if(ug2) ug2.innerText='¡Bienvenido, '+nombre2+'! 👋';
         }
       });
     } else {
