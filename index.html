@@ -149,7 +149,57 @@ select.form-input{cursor:pointer;}
 .no-reporte{text-align:center;color:#888;padding:30px;font-size:14px;}
 .admin-badge{background:#2f5597;color:white;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;}
 
+
+/* FICHAJE */
+.fichaje-card{background:white;border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06);}
+.fichaje-status{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.status-dot{width:12px;height:12px;border-radius:50%;background:#e5e7eb;}
+.status-dot.activo{background:#22c55e;box-shadow:0 0 8px rgba(34,197,94,0.5);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.status-text{font-size:14px;font-weight:700;color:#1a1a2e;}
+.timer-display{font-size:42px;font-weight:900;color:#2f5597;text-align:center;margin:16px 0;letter-spacing:2px;}
+.btn-iniciar{width:100%;padding:16px;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;border:none;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;}
+.btn-finalizar{width:100%;padding:16px;background:linear-gradient(135deg,#ef4444,#dc2626);color:white;border:none;border-radius:12px;font-weight:700;font-size:16px;cursor:pointer;}
+.btn-disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed;}
+#mapaFichaje{width:100%;height:300px;border-radius:12px;margin-top:12px;border:2px solid #e5e7eb;}
+.empleado-card{background:white;border-radius:12px;padding:14px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.05);display:flex;align-items:center;gap:12px;}
+.emp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.emp-dot.online{background:#22c55e;animation:pulse 1.5s infinite;}
+.emp-dot.offline{background:#e5e7eb;}
+.emp-info{flex:1;}
+.emp-nombre{font-size:14px;font-weight:700;color:#1a1a2e;}
+.emp-horas{font-size:12px;color:#888;margin-top:2px;}
+.emp-ver-btn{background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:700;}
+#mapaAdmin{width:100%;height:350px;border-radius:12px;margin:12px 0;border:2px solid #e5e7eb;}
+.hist-item{background:#f0f2f5;border-radius:8px;padding:10px;margin-bottom:6px;font-size:12px;}
+
+
+/* FICHAJE */
+.fichaje-card{background:white;border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,0.06);}
+.btn-iniciar{width:100%;padding:18px;background:linear-gradient(135deg,#16a34a,#15803d);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;}
+.btn-finalizar{width:100%;padding:18px;background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;}
+.btn-disabled{opacity:0.4;cursor:not-allowed;}
+.timer-display{background:linear-gradient(135deg,#2f5597,#1e3a6e);border-radius:14px;padding:20px;text-align:center;color:white;margin-bottom:14px;}
+.timer-label{font-size:12px;opacity:0.8;text-transform:uppercase;letter-spacing:1px;}
+.timer-time{font-size:42px;font-weight:900;font-family:monospace;margin:6px 0;}
+.timer-status{font-size:12px;opacity:0.7;}
+.estado-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:12px;}
+.estado-activo{background:#dcfce7;color:#16a34a;}
+.estado-inactivo{background:#f1f5f9;color:#64748b;}
+#mapaAdmin{width:100%;height:320px;border-radius:14px;margin-bottom:14px;overflow:hidden;}
+.empleado-activo-card{background:white;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #16a34a;}
+.empleado-inactivo-card{background:white;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #e5e7eb;}
+.emp-avatar{width:40px;height:40px;background:#2f5597;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0;}
+.emp-nombre{font-size:14px;font-weight:700;color:#1a1a2e;}
+.emp-info{font-size:12px;color:#888;margin-top:2px;}
+.emp-horas{font-size:13px;font-weight:700;color:#2f5597;margin-left:auto;}
+.hist-item{background:#f8faff;border-radius:10px;padding:12px;margin-bottom:6px;}
+.hist-fecha{font-size:12px;font-weight:700;color:#2f5597;}
+.hist-detalle{font-size:12px;color:#666;margin-top:4px;}
+
 </style>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFN7YhS0wtQ8NNhXZgaoPvJpqclQxWnQ0&libraries=geometry"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFN7YhS0wtQ8NNhXZgaoPvJpqclQxWnQ0&libraries=geometry"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -392,7 +442,10 @@ select.form-input{cursor:pointer;}
         <div style="font-size:12px;color:#888;margin-bottom:14px;" id="fechaReporte"></div>
         <div class="form-reporte">
           <div style="font-size:12px;font-weight:700;color:#666;margin-bottom:4px;">EMPADRONAMIENTOS</div>
-          <input type="number" id="rEmp" placeholder="S/ 0.00" min="0" step="0.01">
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="rEmpCant" placeholder="Cantidad (1,2,3...)" min="0" step="1" style="flex:1;" onkeypress="return event.charCode>=48&&event.charCode<=57">
+            <input type="number" id="rEmp" placeholder="S/ Monto total" min="0" step="0.01" style="flex:1;">
+          </div>
           <div style="font-size:12px;font-weight:700;color:#666;margin-bottom:4px;">LP EFECTIVO</div>
           <input type="number" id="rEfectivo" placeholder="S/ 0.00" min="0" step="0.01">
           <div style="font-size:12px;font-weight:700;color:#666;margin-bottom:4px;">LP TRANSFERENCIA</div>
@@ -417,7 +470,52 @@ select.form-input{cursor:pointer;}
         <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">📅 Ver reportes por fecha</div>
         <input type="date" class="calendar-input" id="fechaAdmin" onchange="cargarReportesAdmin()">
       </div>
-      <div id="listaReportesAdmin"></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button onclick="cargarReportesAdmin()" style="flex:1;padding:10px;background:#2f5597;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;">Ver día</button>
+      <button onclick="verResumenMensual()" style="flex:1;padding:10px;background:#1e3a6e;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;">📊 Resumen mes</button>
+    </div>
+    <div id="listaReportesAdmin"></div>
+    </div>
+  </div>
+
+
+  <!-- FICHAJE PANEL -->
+  <div class="panel" id="panelFichaje">
+    <br>
+    <!-- VISTA EMPLEADO -->
+    <div id="fichajeEmpleado">
+      <div class="fichaje-card">
+        <div class="fichaje-status">
+          <div class="status-dot" id="statusDot"></div>
+          <div class="status-text" id="statusText">Sin jornada activa</div>
+        </div>
+        <div class="timer-display" id="timerDisplay">00:00:00</div>
+        <button class="btn-iniciar" id="btnIniciar" onclick="iniciarJornada()">▶ Iniciar Jornada</button>
+        <button class="btn-finalizar btn-disabled" id="btnFinalizar" onclick="finalizarJornada()" disabled style="margin-top:8px;">⏹ Finalizar Jornada</button>
+        <div id="fichajeMsg" style="text-align:center;font-size:12px;color:#888;margin-top:10px;"></div>
+      </div>
+      <div class="fichaje-card">
+        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📍 Mi ubicación actual</div>
+        <div id="mapaFichaje"></div>
+      </div>
+      <div class="fichaje-card" id="historialPersonal">
+        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📋 Mis últimos registros</div>
+        <div id="listaHistorialPersonal"></div>
+      </div>
+    </div>
+
+    <!-- VISTA ADMIN -->
+    <div id="fichajeAdmin" style="display:none;">
+      <div class="fichaje-card">
+        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Equipo en tiempo real</div>
+        <div id="mapaAdmin"></div>
+        <div id="listaEmpleados" style="margin-top:12px;"></div>
+      </div>
+      <div class="fichaje-card">
+        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📅 Historial por fecha</div>
+        <input type="date" class="calendar-input" id="fechaHistorial" onchange="cargarHistorialAdmin()">
+        <div id="listaHistorialAdmin"></div>
+      </div>
     </div>
   </div>
 
@@ -438,6 +536,10 @@ select.form-input{cursor:pointer;}
     <div class="nav-item" id="nav-meta" onclick="cambiarPanel('meta')">
       <span class="nav-icon">🎯</span>
       <span class="nav-label">Meta</span>
+    </div>
+    <div class="nav-item" id="nav-fichaje" onclick="cambiarPanel('fichaje')">
+      <span class="nav-icon">📍</span>
+      <span class="nav-label">Fichaje</span>
     </div>
     <div class="nav-item" id="nav-reporte" onclick="cambiarPanel('reporte')">
       <span class="nav-icon">📋</span>
@@ -937,7 +1039,7 @@ document.body.appendChild(popup);
 }
 
 var CSV_RAW = [
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=1062433056&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=625756343&single=true&output=csv',
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOcmqXkioSv7zl1AVIqYyT14MNDbwj_yOSr_eb1CHnRlZwzIFvud9DocTmbENSzvMP_v457EgRDBrg/pub?gid=539502693&single=true&output=csv'
 ];
 // Try multiple proxies in order
@@ -1187,7 +1289,7 @@ function resetDispositivo(){
 
 
 function cambiarPanel(p){
-  ['home','calculo','consulta','meta','reporte','perfil'].forEach(function(x){
+  ['home','calculo','consulta','meta','fichaje','reporte','perfil'].forEach(function(x){
     document.getElementById('panel'+x.charAt(0).toUpperCase()+x.slice(1)).classList.remove('active');
     document.getElementById('nav-'+x).classList.remove('active');
   });
@@ -1494,6 +1596,7 @@ function initFirebase(){
             if(ug) ug.innerText='¡Bienvenido, '+nombre+'!';
             var isAdmin = ADMINS.indexOf(user.email.toLowerCase())>-1;
             initReporte(user.email, isAdmin);
+            initFichaje(user.email, isAdmin);
           } else {
             auth.signOut();
             var err=document.getElementById('loginError');
@@ -1512,6 +1615,7 @@ function initFirebase(){
           if(ug2) ug2.innerText='¡Bienvenido, '+nombre2+'!';
           var isAdmin2 = ADMINS.indexOf(user.email.toLowerCase())>-1;
           initReporte(user.email, isAdmin2);
+          initFichaje(user.email, isAdmin2);
         }
       });
     } else {
@@ -1624,6 +1728,68 @@ function renderMeta(){
 
 // Load meta when app opens
 document.addEventListener('DOMContentLoaded', loadMeta);
+
+function verResumenMensual(){
+  var fecha = document.getElementById('fechaAdmin').value;
+  if(!fecha){ alert('Selecciona una fecha primero'); return; }
+  var parts = fecha.split('-');
+  var year = parts[0]; var month = parts[1];
+  var primerDia = year+'-'+month+'-01';
+  var ultimoDia = year+'-'+month+'-'+(new Date(year, month, 0).getDate());
+  var lista = document.getElementById('listaReportesAdmin');
+  lista.innerHTML = '<div class="loading">Cargando resumen del mes...</div>';
+  var db = firebase.firestore();
+  db.collection('reportes')
+    .where('fecha','>=',primerDia)
+    .where('fecha','<=',ultimoDia)
+    .get().then(function(snap){
+    if(snap.empty){ lista.innerHTML='<div class="no-reporte">No hay reportes en este mes.</div>'; return; }
+    var totales = {};
+    var grandTotal = 0;
+    var totalEmp=0, totalEf=0, totalTr=0, totalBye=0, totalCant=0;
+    snap.forEach(function(doc){
+      var d=doc.data();
+      if(!totales[d.email]) totales[d.email]={nombre:d.nombre,emp:0,empCant:0,ef:0,tr:0,bye:0,total:0,dias:0};
+      totales[d.email].emp+=d.emp||0;
+      totales[d.email].empCant+=d.empCantidad||0;
+      totales[d.email].ef+=d.efectivo||0;
+      totales[d.email].tr+=d.transferencia||0;
+      totales[d.email].bye+=d.bye||0;
+      totales[d.email].total+=d.total||0;
+      totales[d.email].dias+=1;
+      grandTotal+=d.total||0;
+      totalEmp+=d.emp||0;
+      totalEf+=d.efectivo||0;
+      totalTr+=d.transferencia||0;
+      totalBye+=d.bye||0;
+      totalCant+=d.empCantidad||0;
+    });
+    var meses=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    var html='<div class="reporte-card" style="background:linear-gradient(135deg,#2f5597,#1e3a6e);color:white;margin-bottom:14px;">';
+    html+='<div style="font-size:14px;font-weight:700;margin-bottom:4px;">📊 RESUMEN '+meses[parseInt(month)-1]+' '+year+'</div>';
+    html+='<div style="font-size:28px;font-weight:900;">S/ '+grandTotal.toFixed(2)+'</div>';
+    html+='<div style="font-size:12px;opacity:0.8;margin-top:4px;">Total cobrado del mes</div></div>';
+    html+='<div class="reporte-card">';
+    html+='<div style="font-size:12px;font-weight:700;color:#2f5597;margin-bottom:8px;">TOTALES GENERALES</div>';
+    html+='<div class="reporte-row"><span class="reporte-label">Empadronamientos</span><span class="reporte-val">'+totalCant+' | S/ '+totalEmp.toFixed(2)+'</span></div>';
+    html+='<div class="reporte-row"><span class="reporte-label">LP Efectivo</span><span class="reporte-val">S/ '+totalEf.toFixed(2)+'</span></div>';
+    html+='<div class="reporte-row"><span class="reporte-label">LP Transferencia</span><span class="reporte-val">S/ '+totalTr.toFixed(2)+'</span></div>';
+    html+='<div class="reporte-row"><span class="reporte-label">BYE</span><span class="reporte-val">S/ '+totalBye.toFixed(2)+'</span></div>';
+    html+='</div>';
+    Object.keys(totales).forEach(function(email){
+      var t=totales[email];
+      html+='<div class="reporte-card">';
+      html+='<div class="reporte-user">👤 '+t.nombre+'<span style="font-size:11px;color:#888;margin-left:8px;">'+t.dias+' días</span></div>';
+      html+='<div class="reporte-row"><span class="reporte-label">Empadronamientos</span><span class="reporte-val">'+t.empCant+' | S/ '+t.emp.toFixed(2)+'</span></div>';
+      html+='<div class="reporte-row"><span class="reporte-label">LP Efectivo</span><span class="reporte-val">S/ '+t.ef.toFixed(2)+'</span></div>';
+      html+='<div class="reporte-row"><span class="reporte-label">LP Transferencia</span><span class="reporte-val">S/ '+t.tr.toFixed(2)+'</span></div>';
+      html+='<div class="reporte-row"><span class="reporte-label">BYE</span><span class="reporte-val">S/ '+t.bye.toFixed(2)+'</span></div>';
+      html+='<div class="reporte-row"><span class="reporte-label">TOTAL</span><span class="reporte-val" style="color:#2f5597;">S/ '+t.total.toFixed(2)+'</span></div>';
+      html+='</div>';
+    });
+    lista.innerHTML=html;
+  }).catch(function(e){ lista.innerHTML='<div class="no-reporte">Error: '+e.message+'</div>'; });
+}
 </script>
 
 
@@ -1672,6 +1838,7 @@ function initReporte(email, isAdmin){
 }
 
 function enviarReporte(){
+  var empCant = parseInt(document.getElementById('rEmpCant').value)||0;
   var emp = parseFloat(document.getElementById('rEmp').value)||0;
   var ef = parseFloat(document.getElementById('rEfectivo').value)||0;
   var tr = parseFloat(document.getElementById('rTransferencia').value)||0;
@@ -1684,28 +1851,39 @@ function enviarReporte(){
   var db = firebase.firestore();
   var fecha = getTodayStr();
   var nombre = USUARIOS[currentUserEmail.toLowerCase()] || currentUserEmail.split('@')[0];
+  var docId = fecha+'_'+currentUserEmail;
 
-  db.collection('reportes').doc(fecha+'_'+currentUserEmail).set({
-    email: currentUserEmail,
-    nombre: nombre,
-    fecha: fecha,
-    emp: emp,
-    efectivo: ef,
-    transferencia: tr,
-    bye: bye,
-    total: total,
-    timestamp: new Date().toISOString()
-  }).then(function(){
-    msg.style.color='#065f46';
-    msg.innerText='✅ Reporte enviado correctamente.';
-    document.getElementById('rEmp').value='';
-    document.getElementById('rEfectivo').value='';
-    document.getElementById('rTransferencia').value='';
-    document.getElementById('rBye').value='';
-    document.getElementById('rTotal').innerText='S/ 0.00';
-  }).catch(function(e){
-    msg.style.color='#dc2626';
-    msg.innerText='Error al enviar: '+e.message;
+  // Check if already submitted today
+  db.collection('reportes').doc(docId).get().then(function(doc){
+    if(doc.exists){
+      msg.style.color='#dc2626';
+      msg.innerText='Ya enviaste tu reporte de hoy. Solo se permite 1 reporte por día.';
+      return;
+    }
+    db.collection('reportes').doc(docId).set({
+      email: currentUserEmail,
+      nombre: nombre,
+      fecha: fecha,
+      empCantidad: empCant,
+      emp: emp,
+      efectivo: ef,
+      transferencia: tr,
+      bye: bye,
+      total: total,
+      timestamp: new Date().toISOString()
+    }).then(function(){
+      msg.style.color='#065f46';
+      msg.innerText='✅ Reporte enviado correctamente.';
+      document.getElementById('rEmpCant').value='';
+      document.getElementById('rEmp').value='';
+      document.getElementById('rEfectivo').value='';
+      document.getElementById('rTransferencia').value='';
+      document.getElementById('rBye').value='';
+      document.getElementById('rTotal').innerText='S/ 0.00';
+    }).catch(function(e){
+      msg.style.color='#dc2626';
+      msg.innerText='Error al enviar: '+e.message;
+    });
   });
 }
 
@@ -1735,7 +1913,7 @@ function cargarReportesAdmin(){
 
       html += '<div class="reporte-card">';
       html += '<div class="reporte-user">👤 '+d.nombre+' <span style="font-size:11px;color:#888;">'+d.email+'</span></div>';
-      html += '<div class="reporte-row"><span class="reporte-label">Empadronamientos</span><span class="reporte-val">S/ '+d.emp.toFixed(2)+'</span></div>';
+      html += '<div class="reporte-row"><span class="reporte-label">Empadronamientos</span><span class="reporte-val">'+(d.empCantidad||0)+' | S/ '+d.emp.toFixed(2)+'</span></div>';
       html += '<div class="reporte-row"><span class="reporte-label">LP Efectivo</span><span class="reporte-val">S/ '+d.efectivo.toFixed(2)+'</span></div>';
       html += '<div class="reporte-row"><span class="reporte-label">LP Transferencia</span><span class="reporte-val">S/ '+d.transferencia.toFixed(2)+'</span></div>';
       html += '<div class="reporte-row"><span class="reporte-label">BYE</span><span class="reporte-val">S/ '+d.bye.toFixed(2)+'</span></div>';
@@ -1756,6 +1934,259 @@ function cargarReportesAdmin(){
     lista.innerHTML = html;
   }).catch(function(e){
     lista.innerHTML = '<div class="no-reporte">Error: '+e.message+'</div>';
+  });
+}
+</script>
+
+
+<script>
+// FICHAJE + GPS
+var jornadaActiva = false;
+var jornadaId = null;
+var timerInterval = null;
+var watchId = null;
+var jornadaInicio = null;
+var rutaPuntos = [];
+var mapaEmpleado = null;
+var mapaAdminMap = null;
+var marcadoresAdmin = {};
+var polylineEmpleado = null;
+
+function initFichaje(email, isAdmin){
+  var hoy = new Date().toISOString().split('T')[0];
+  document.getElementById('fechaHistorial') && (document.getElementById('fechaHistorial').value = hoy);
+
+  if(isAdmin){
+    document.getElementById('fichajeEmpleado').style.display = 'block';
+    document.getElementById('fichajeAdmin').style.display = 'block';
+    initMapaAdmin();
+    escucharEmpleados();
+    cargarHistorialAdmin();
+  } else {
+    document.getElementById('fichajeEmpleado').style.display = 'block';
+    document.getElementById('fichajeAdmin').style.display = 'none';
+  }
+  initMapaEmpleado();
+  cargarHistorialPersonal(email);
+}
+
+function initMapaEmpleado(){
+  if(mapaEmpleado) return;
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var centro = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+    mapaEmpleado = new google.maps.Map(document.getElementById('mapaFichaje'), {
+      center: centro, zoom: 15,
+      mapTypeControl: false, streetViewControl: false
+    });
+    new google.maps.Marker({position: centro, map: mapaEmpleado, title: 'Tú'});
+  }, function(){
+    mapaEmpleado = new google.maps.Map(document.getElementById('mapaFichaje'), {
+      center: {lat: -12.046374, lng: -77.042793}, zoom: 12,
+      mapTypeControl: false, streetViewControl: false
+    });
+  });
+}
+
+function initMapaAdmin(){
+  if(mapaAdminMap) return;
+  setTimeout(function(){
+    mapaAdminMap = new google.maps.Map(document.getElementById('mapaAdmin'), {
+      center: {lat: -12.046374, lng: -77.042793}, zoom: 12,
+      mapTypeControl: false, streetViewControl: false
+    });
+  }, 500);
+}
+
+function iniciarJornada(){
+  if(!navigator.geolocation){ alert('Tu dispositivo no soporta GPS'); return; }
+  var msg = document.getElementById('fichajeMsg');
+  msg.innerText = 'Obteniendo ubicación...';
+
+  navigator.geolocation.getCurrentPosition(function(pos){
+    jornadaActiva = true;
+    jornadaInicio = new Date();
+    jornadaId = getTodayStr()+'_'+currentUserEmail+'_'+Date.now();
+    rutaPuntos = [{lat: pos.coords.latitude, lng: pos.coords.longitude, t: new Date().toISOString()}];
+
+    // Save to Firestore
+    var db = firebase.firestore();
+    var nombre = USUARIOS[currentUserEmail.toLowerCase()]||currentUserEmail.split('@')[0];
+    db.collection('jornadas').doc(jornadaId).set({
+      email: currentUserEmail,
+      nombre: nombre,
+      inicio: jornadaInicio.toISOString(),
+      fecha: getTodayStr(),
+      activa: true,
+      ruta: rutaPuntos,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude
+    });
+
+    // Update UI
+    document.getElementById('statusDot').classList.add('activo');
+    document.getElementById('statusText').innerText = 'Jornada activa';
+    document.getElementById('btnIniciar').classList.add('btn-disabled');
+    document.getElementById('btnIniciar').disabled = true;
+    document.getElementById('btnFinalizar').classList.remove('btn-disabled');
+    document.getElementById('btnFinalizar').disabled = false;
+    msg.innerText = '✅ Jornada iniciada';
+
+    // Start timer
+    timerInterval = setInterval(actualizarTimer, 1000);
+
+    // Watch position
+    watchId = navigator.geolocation.watchPosition(function(p){
+      rutaPuntos.push({lat: p.coords.latitude, lng: p.coords.longitude, t: new Date().toISOString()});
+      // Update Firestore every 5 points
+      if(rutaPuntos.length % 5 === 0){
+        db.collection('jornadas').doc(jornadaId).update({
+          ruta: rutaPuntos,
+          lat: p.coords.latitude,
+          lng: p.coords.longitude
+        });
+      }
+      // Update map
+      if(mapaEmpleado){
+        var pos2 = {lat: p.coords.latitude, lng: p.coords.longitude};
+        mapaEmpleado.setCenter(pos2);
+        if(polylineEmpleado) polylineEmpleado.setMap(null);
+        polylineEmpleado = new google.maps.Polyline({
+          path: rutaPuntos.map(function(r){ return {lat:r.lat, lng:r.lng}; }),
+          strokeColor: '#2f5597', strokeWeight: 3, map: mapaEmpleado
+        });
+      }
+    }, null, {enableHighAccuracy: true, maximumAge: 10000, timeout: 5000});
+
+  }, function(){ msg.style.color='#dc2626'; msg.innerText='Error al obtener GPS. Activa la ubicación.'; });
+}
+
+function finalizarJornada(){
+  if(!jornadaActiva) return;
+  jornadaActiva = false;
+  clearInterval(timerInterval);
+  navigator.geolocation.clearWatch(watchId);
+
+  var fin = new Date();
+  var diffMs = fin - jornadaInicio;
+  var horas = Math.floor(diffMs/3600000);
+  var mins = Math.floor((diffMs%3600000)/60000);
+  var horasStr = horas+'h '+mins+'m';
+
+  var db = firebase.firestore();
+  db.collection('jornadas').doc(jornadaId).update({
+    fin: fin.toISOString(),
+    activa: false,
+    ruta: rutaPuntos,
+    duracion: horasStr,
+    duracionMs: diffMs
+  });
+
+  document.getElementById('statusDot').classList.remove('activo');
+  document.getElementById('statusText').innerText = 'Jornada finalizada';
+  document.getElementById('btnIniciar').classList.remove('btn-disabled');
+  document.getElementById('btnIniciar').disabled = false;
+  document.getElementById('btnFinalizar').classList.add('btn-disabled');
+  document.getElementById('btnFinalizar').disabled = true;
+  document.getElementById('fichajeMsg').innerText = '✅ Jornada guardada: '+horasStr;
+  document.getElementById('timerDisplay').innerText = '00:00:00';
+
+  cargarHistorialPersonal(currentUserEmail);
+  jornadaId = null; rutaPuntos = [];
+}
+
+function actualizarTimer(){
+  if(!jornadaInicio) return;
+  var diff = new Date() - jornadaInicio;
+  var h = Math.floor(diff/3600000);
+  var m = Math.floor((diff%3600000)/60000);
+  var s = Math.floor((diff%60000)/1000);
+  document.getElementById('timerDisplay').innerText =
+    String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function escucharEmpleados(){
+  if(!firebase.firestore) return;
+  var db = firebase.firestore();
+  db.collection('jornadas').where('fecha','==',getTodayStr()).where('activa','==',true)
+    .onSnapshot(function(snap){
+      var lista = document.getElementById('listaEmpleados');
+      if(!lista) return;
+      if(snap.empty){ lista.innerHTML='<div class="no-reporte">No hay empleados activos ahora.</div>'; return; }
+      var html='';
+      snap.forEach(function(doc){
+        var d=doc.data();
+        html+='<div class="empleado-card">';
+        html+='<div class="emp-dot online"></div>';
+        html+='<div class="emp-info"><div class="emp-nombre">'+d.nombre+'</div>';
+        html+='<div class="emp-horas">Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+        html+='<button class="emp-ver-btn" onclick="verRutaEmpleado('+JSON.stringify(d.ruta)+','+d.lat+','+d.lng+')">Ver</button>';
+        html+='</div>';
+        // Update map marker
+        if(mapaAdminMap && d.lat && d.lng){
+          if(marcadoresAdmin[d.email]){
+            marcadoresAdmin[d.email].setPosition({lat:d.lat, lng:d.lng});
+          } else {
+            marcadoresAdmin[d.email] = new google.maps.Marker({
+              position:{lat:d.lat,lng:d.lng}, map:mapaAdminMap,
+              title:d.nombre,
+              label:{text:d.nombre.charAt(0),color:'white'}
+            });
+          }
+        }
+      });
+      lista.innerHTML=html;
+    });
+}
+
+function verRutaEmpleado(ruta, lat, lng){
+  if(!mapaAdminMap || !ruta || ruta.length===0) return;
+  mapaAdminMap.setCenter({lat:lat, lng:lng});
+  mapaAdminMap.setZoom(14);
+  new google.maps.Polyline({
+    path: ruta.map(function(r){ return {lat:r.lat, lng:r.lng}; }),
+    strokeColor:'#2f5597', strokeWeight:3, map:mapaAdminMap
+  });
+}
+
+function cargarHistorialPersonal(email){
+  var db = firebase.firestore();
+  db.collection('jornadas').where('email','==',email).where('fecha','==',getTodayStr())
+    .get().then(function(snap){
+      var lista = document.getElementById('listaHistorialPersonal');
+      if(!lista) return;
+      if(snap.empty){ lista.innerHTML='<div style="color:#888;font-size:13px;">Sin registros hoy.</div>'; return; }
+      var html='';
+      snap.forEach(function(doc){
+        var d=doc.data();
+        html+='<div class="hist-item">';
+        html+='<b>Entrada:</b> '+new Date(d.inicio).toLocaleTimeString('es-PE')+'<br>';
+        if(d.fin) html+='<b>Salida:</b> '+new Date(d.fin).toLocaleTimeString('es-PE')+'<br>';
+        if(d.duracion) html+='<b>Total:</b> '+d.duracion;
+        html+='</div>';
+      });
+      lista.innerHTML=html;
+    });
+}
+
+function cargarHistorialAdmin(){
+  var fecha = document.getElementById('fechaHistorial').value;
+  if(!fecha) return;
+  var db = firebase.firestore();
+  var lista = document.getElementById('listaHistorialAdmin');
+  lista.innerHTML='<div style="color:#888;font-size:13px;">Cargando...</div>';
+  db.collection('jornadas').where('fecha','==',fecha).get().then(function(snap){
+    if(snap.empty){ lista.innerHTML='<div style="color:#888;font-size:13px;">Sin registros.</div>'; return; }
+    var html='';
+    snap.forEach(function(doc){
+      var d=doc.data();
+      html+='<div class="hist-item">';
+      html+='<b>'+d.nombre+'</b><br>';
+      html+='Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE');
+      if(d.fin) html+=' | Salida: '+new Date(d.fin).toLocaleTimeString('es-PE');
+      if(d.duracion) html+=' | <b>'+d.duracion+'</b>';
+      html+='</div>';
+    });
+    lista.innerHTML=html;
   });
 }
 </script>
