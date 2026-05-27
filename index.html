@@ -813,7 +813,7 @@ colA = (giroVal=="Gimnasio") ? Number(nivelGimnasio.value) : 0.35;
 colB = val + ' X 60% = ' + aforoB;
 colC = h + ' X ' + d + ' = ' + horasC;
 colD = 0.03;
-tarifaMensual = Number(totalFinal).toFixed(2);
+tarifaMensual = Number(window._mensualBase||totalFinal).toFixed(2);
 } else {
 let diasMes = [0,5,9,13,18,22,25,30][diasSemana.value];
 let entradaV = entradaTipo.value=="sin" ? 7.50 : (Number(precio.value)||0);
@@ -826,7 +826,7 @@ colA = factor;
 colB = aforo + ' X 60% = ' + aforo60;
 colC = 'S/.' + entradaV.toFixed(2) + ' X ' + diasMes + 'd';
 colD = factor;
-tarifaMensual = Number(totalFinal).toFixed(2);
+tarifaMensual = Number(window._mensualBase||totalFinal).toFixed(2);
 }
 doc.setFillColor(240,242,245);
 doc.rect(margin, y, cw, 12, 'F');
