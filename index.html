@@ -519,6 +519,48 @@ select.form-input{cursor:pointer;}
     </div>
   </div>
 
+
+  <!-- FICHAJE PANEL -->
+  <div class="panel" id="panelFichaje">
+    <br>
+
+    <!-- VISTA EMPLEADO -->
+    <div id="fichajeEmpleado">
+      <div class="timer-display">
+        <div class="timer-label">Tiempo trabajado hoy</div>
+        <div class="timer-time" id="timerDisplay">00:00:00</div>
+        <div class="timer-status" id="timerStatus">Jornada no iniciada</div>
+      </div>
+
+      <div style="text-align:center;margin-bottom:12px;">
+        <span class="estado-badge estado-inactivo" id="estadoBadge">⚪ Inactivo</span>
+      </div>
+
+      <div class="fichaje-card">
+        <div style="font-size:13px;color:#666;margin-bottom:12px;">📍 Tu ubicación se registrará durante la jornada activa</div>
+        <button class="btn-iniciar" id="btnIniciar" onclick="iniciarJornada()">▶ Iniciar Jornada</button>
+        <button class="btn-finalizar btn-disabled" id="btnFinalizar" onclick="finalizarJornada()" disabled>⏹ Finalizar Jornada</button>
+      </div>
+
+      <div id="historialPropio"></div>
+    </div>
+
+    <!-- VISTA ADMIN FICHAJE -->
+    <div id="fichajeAdmin" style="display:none;">
+      <div class="fichaje-card">
+        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Empleados activos ahora</div>
+        <div id="mapaAdmin"></div>
+        <div id="listaEmpleados"></div>
+      </div>
+      <div class="fichaje-card">
+        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:10px;">📅 Ver historial por fecha</div>
+        <input type="date" class="calendar-input" id="fechaFichaje" onchange="cargarHistorialAdmin()">
+        <div id="historialAdmin"></div>
+      </div>
+    </div>
+
+  </div>
+
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
     <div class="nav-item active" id="nav-home" onclick="cambiarPanel('home')">
@@ -536,6 +578,10 @@ select.form-input{cursor:pointer;}
     <div class="nav-item" id="nav-meta" onclick="cambiarPanel('meta')">
       <span class="nav-icon">🎯</span>
       <span class="nav-label">Meta</span>
+    </div>
+    <div class="nav-item" id="nav-fichaje" onclick="cambiarPanel('fichaje')">
+      <span class="nav-icon">📍</span>
+      <span class="nav-label">Fichaje</span>
     </div>
     <div class="nav-item" id="nav-fichaje" onclick="cambiarPanel('fichaje')">
       <span class="nav-icon">📍</span>
@@ -1597,6 +1643,7 @@ function initFirebase(){
             var isAdmin = ADMINS.indexOf(user.email.toLowerCase())>-1;
             initReporte(user.email, isAdmin);
             initFichaje(user.email, isAdmin);
+            initFichaje(user.email, isAdmin);
           } else {
             auth.signOut();
             var err=document.getElementById('loginError');
@@ -1615,6 +1662,7 @@ function initFirebase(){
           if(ug2) ug2.innerText='¡Bienvenido, '+nombre2+'!';
           var isAdmin2 = ADMINS.indexOf(user.email.toLowerCase())>-1;
           initReporte(user.email, isAdmin2);
+          initFichaje(user.email, isAdmin2);
           initFichaje(user.email, isAdmin2);
         }
       });
@@ -2188,6 +2236,280 @@ function cargarHistorialAdmin(){
     });
     lista.innerHTML=html;
   });
+}
+</script>
+
+
+<script>
+var jornadaActiva = false;
+var jornadaInicio = null;
+var timerInterval = null;
+var watchId = null;
+var rutaActual = [];
+var mapaInstance = null;
+var rutaPolyline = null;
+var marcadoresEmpleados = {};
+
+function initFichaje(email, isAdmin){
+  var hoy = new Date();
+  document.getElementById('fechaFichaje') && (document.getElementById('fechaFichaje').value = getTodayStr());
+
+  if(isAdmin){
+    document.getElementById('fichajeEmpleado').style.display='block';
+    document.getElementById('fichajeAdmin').style.display='block';
+    initMapaAdmin();
+    cargarEmpleadosActivos();
+    setInterval(cargarEmpleadosActivos, 15000); // refresh cada 15s
+  } else {
+    document.getElementById('fichajeEmpleado').style.display='block';
+    document.getElementById('fichajeAdmin').style.display='none';
+  }
+  cargarHistorialPropio(email);
+
+  // Check if already active today
+  var db = firebase.firestore();
+  db.collection('fichajes').doc(getTodayStr()+'_'+email).get().then(function(doc){
+    if(doc.exists && !doc.data().fin){
+      // Restore active session
+      jornadaActiva = true;
+      jornadaInicio = new Date(doc.data().inicio);
+      rutaActual = doc.data().ruta || [];
+      actualizarUIActivo();
+      startTimer();
+      startGPS(email);
+    }
+  });
+}
+
+function iniciarJornada(){
+  if(!navigator.geolocation){ alert('Tu dispositivo no soporta GPS'); return; }
+  navigator.geolocation.getCurrentPosition(function(pos){
+    jornadaActiva = true;
+    jornadaInicio = new Date();
+    rutaActual = [{lat: pos.coords.latitude, lng: pos.coords.longitude, t: jornadaInicio.toISOString()}];
+
+    var db = firebase.firestore();
+    var email = currentUserEmail;
+    var nombre = USUARIOS[email.toLowerCase()]||email.split('@')[0];
+    db.collection('fichajes').doc(getTodayStr()+'_'+email).set({
+      email: email,
+      nombre: nombre,
+      fecha: getTodayStr(),
+      inicio: jornadaInicio.toISOString(),
+      fin: null,
+      ruta: rutaActual,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      activo: true
+    });
+
+    actualizarUIActivo();
+    startTimer();
+    startGPS(email);
+  }, function(){ alert('No se pudo obtener ubicación. Verifica los permisos de GPS.'); });
+}
+
+function finalizarJornada(){
+  if(!jornadaActiva) return;
+  jornadaActiva = false;
+  clearInterval(timerInterval);
+  if(watchId) navigator.geolocation.clearWatch(watchId);
+
+  var fin = new Date();
+  var horas = Math.floor((fin - jornadaInicio)/3600000);
+  var mins = Math.floor(((fin - jornadaInicio)%3600000)/60000);
+  var horasStr = horas+'h '+mins+'m';
+
+  var db = firebase.firestore();
+  var email = currentUserEmail;
+  db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
+    fin: fin.toISOString(),
+    horasTrabajadas: horasStr,
+    ruta: rutaActual,
+    activo: false
+  });
+
+  document.getElementById('btnIniciar').disabled = false;
+  document.getElementById('btnIniciar').classList.remove('btn-disabled');
+  document.getElementById('btnFinalizar').disabled = true;
+  document.getElementById('btnFinalizar').classList.add('btn-disabled');
+  document.getElementById('estadoBadge').className='estado-badge estado-inactivo';
+  document.getElementById('estadoBadge').innerText='⚪ Inactivo';
+  document.getElementById('timerStatus').innerText='Jornada finalizada: '+horasStr;
+
+  cargarHistorialPropio(email);
+}
+
+function actualizarUIActivo(){
+  document.getElementById('btnIniciar').disabled = true;
+  document.getElementById('btnIniciar').classList.add('btn-disabled');
+  document.getElementById('btnFinalizar').disabled = false;
+  document.getElementById('btnFinalizar').classList.remove('btn-disabled');
+  document.getElementById('estadoBadge').className='estado-badge estado-activo';
+  document.getElementById('estadoBadge').innerText='🟢 Jornada activa';
+  document.getElementById('timerStatus').innerText='Jornada en curso...';
+}
+
+function startTimer(){
+  timerInterval = setInterval(function(){
+    if(!jornadaInicio) return;
+    var diff = new Date() - jornadaInicio;
+    var h = Math.floor(diff/3600000);
+    var m = Math.floor((diff%3600000)/60000);
+    var s = Math.floor((diff%60000)/1000);
+    document.getElementById('timerDisplay').innerText =
+      String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }, 1000);
+}
+
+function startGPS(email){
+  watchId = navigator.geolocation.watchPosition(function(pos){
+    var punto = {lat: pos.coords.latitude, lng: pos.coords.longitude, t: new Date().toISOString()};
+    rutaActual.push(punto);
+    // Update every 10 points to save bandwidth
+    if(rutaActual.length % 10 === 0){
+      var db = firebase.firestore();
+      db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
+        ruta: rutaActual,
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      });
+    }
+  }, null, {enableHighAccuracy: true, maximumAge: 30000, timeout: 27000});
+}
+
+function initMapaAdmin(){
+  var mapDiv = document.getElementById('mapaAdmin');
+  if(!mapDiv || !window.google) return;
+  mapaInstance = new google.maps.Map(mapDiv, {
+    zoom: 12,
+    center: {lat: -12.0464, lng: -77.0428}, // Lima
+    mapTypeId: 'roadmap'
+  });
+}
+
+function cargarEmpleadosActivos(){
+  if(!mapaInstance) return;
+  var db = firebase.firestore();
+  var lista = document.getElementById('listaEmpleados');
+  db.collection('fichajes').where('fecha','==',getTodayStr()).get().then(function(snap){
+    var html = '';
+    snap.forEach(function(doc){
+      var d = doc.data();
+      var inicial = (d.nombre||'?')[0].toUpperCase();
+      if(d.activo && d.lat){
+        var pos = {lat: d.lat, lng: d.lng};
+        if(marcadoresEmpleados[d.email]){
+          marcadoresEmpleados[d.email].setPosition(pos);
+        } else {
+          marcadoresEmpleados[d.email] = new google.maps.Marker({
+            position: pos, map: mapaInstance,
+            title: d.nombre,
+            label: {text: inicial, color: 'white'},
+            icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
+                   fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+          });
+        }
+        html += '<div class="empleado-activo-card">';
+        html += '<div class="emp-avatar">'+inicial+'</div>';
+        html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
+        html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+        html += '<button onclick="verRutaEmpleado(''+d.email+'')" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
+        html += '</div>';
+      } else {
+        if(marcadoresEmpleados[d.email]){
+          marcadoresEmpleados[d.email].setMap(null);
+          delete marcadoresEmpleados[d.email];
+        }
+        var horasStr = d.horasTrabajadas || (d.fin ? '—' : 'Sin fichar');
+        html += '<div class="empleado-inactivo-card">';
+        html += '<div class="emp-avatar" style="background:#94a3b8;">'+inicial+'</div>';
+        html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
+        html += '<div class="emp-info">⚪ '+horasStr+'</div></div>';
+        html += '</div>';
+      }
+    });
+    if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún empleado activo hoy.</div>';
+  });
+}
+
+function verRutaEmpleado(email){
+  var db = firebase.firestore();
+  db.collection('fichajes').doc(getTodayStr()+'_'+email).get().then(function(doc){
+    if(!doc.exists || !doc.data().ruta) return;
+    var ruta = doc.data().ruta;
+    if(rutaPolyline) rutaPolyline.setMap(null);
+    var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
+    rutaPolyline = new google.maps.Polyline({
+      path: path, geodesic: true,
+      strokeColor: '#2f5597', strokeOpacity: 1.0, strokeWeight: 3
+    });
+    rutaPolyline.setMap(mapaInstance);
+    if(path.length > 0) mapaInstance.panTo(path[path.length-1]);
+  });
+}
+
+function cargarHistorialAdmin(){
+  var fecha = document.getElementById('fechaFichaje').value;
+  if(!fecha) return;
+  var lista = document.getElementById('historialAdmin');
+  lista.innerHTML = '<div class="loading">Cargando...</div>';
+  var db = firebase.firestore();
+  db.collection('fichajes').where('fecha','==',fecha).get().then(function(snap){
+    if(snap.empty){ lista.innerHTML='<div class="no-reporte">Sin registros.</div>'; return; }
+    var html='';
+    snap.forEach(function(doc){
+      var d=doc.data();
+      html+='<div class="hist-item">';
+      html+='<div class="hist-fecha">👤 '+d.nombre+'</div>';
+      html+='<div class="hist-detalle">Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div>';
+      if(d.fin) html+='<div class="hist-detalle">Salida: '+new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+' | '+d.horasTrabajadas+'</div>';
+      else html+='<div class="hist-detalle" style="color:#16a34a;">🟢 Activo</div>';
+      html+='<button onclick="verRutaFecha(''+d.email+'',''+fecha+'')" style="margin-top:6px;background:#2f5597;color:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;">Ver ruta en mapa</button>';
+      html+='</div>';
+    });
+    lista.innerHTML=html;
+  });
+}
+
+function verRutaFecha(email, fecha){
+  var db = firebase.firestore();
+  db.collection('fichajes').doc(fecha+'_'+email).get().then(function(doc){
+    if(!doc.exists || !doc.data().ruta) return;
+    var ruta = doc.data().ruta;
+    if(!mapaInstance) initMapaAdmin();
+    if(rutaPolyline) rutaPolyline.setMap(null);
+    var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
+    rutaPolyline = new google.maps.Polyline({
+      path: path, geodesic: true,
+      strokeColor: '#dc2626', strokeOpacity: 1.0, strokeWeight: 3
+    });
+    rutaPolyline.setMap(mapaInstance);
+    if(path.length > 0) mapaInstance.panTo(path[0]);
+    document.getElementById('panelFichaje').scrollTop=0;
+    window.scrollTo(0,0);
+  });
+}
+
+function cargarHistorialPropio(email){
+  var db = firebase.firestore();
+  var lista = document.getElementById('historialPropio');
+  if(!lista) return;
+  db.collection('fichajes').where('email','==',email).orderBy('fecha','desc').limit(7).get().then(function(snap){
+    if(snap.empty){ lista.innerHTML=''; return; }
+    var html='<div class="fichaje-card"><div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">Últimos 7 días</div>';
+    snap.forEach(function(doc){
+      var d=doc.data();
+      html+='<div class="hist-item">';
+      html+='<div class="hist-fecha">'+d.fecha+'</div>';
+      html+='<div class="hist-detalle">Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div>';
+      if(d.fin) html+='<div class="hist-detalle">Salida: '+new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+' — '+d.horasTrabajadas+'</div>';
+      else html+='<div class="hist-detalle" style="color:#16a34a;">🟢 En curso</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+    lista.innerHTML=html;
+  }).catch(function(){});
 }
 </script>
 
