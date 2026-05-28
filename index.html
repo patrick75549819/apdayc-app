@@ -198,8 +198,8 @@ select.form-input{cursor:pointer;}
 .hist-detalle{font-size:12px;color:#666;margin-top:4px;}
 
 </style>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFN7YhS0wtQ8NNhXZgaoPvJpqclQxWnQ0&libraries=geometry"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFN7YhS0wtQ8NNhXZgaoPvJpqclQxWnQ0&libraries=geometry"></script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFN7YhS0wtQ8NNhXZgaoPvJpqclQxWnQ0&libraries=geometry&callback=onMapsLoaded" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -548,7 +548,7 @@ select.form-input{cursor:pointer;}
     <!-- VISTA ADMIN FICHAJE -->
     <div id="fichajeAdmin" style="display:none;">
       <div class="fichaje-card">
-        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Empleados activos ahora</div>
+        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Equipo en tiempo real</div>
         <div id="mapaAdmin"></div>
         <div id="listaEmpleados"></div>
       </div>
@@ -579,13 +579,10 @@ select.form-input{cursor:pointer;}
       <span class="nav-icon">🎯</span>
       <span class="nav-label">Meta</span>
     </div>
+
     <div class="nav-item" id="nav-fichaje" onclick="cambiarPanel('fichaje')">
       <span class="nav-icon">📍</span>
-      <span class="nav-label">Fichaje</span>
-    </div>
-    <div class="nav-item" id="nav-fichaje" onclick="cambiarPanel('fichaje')">
-      <span class="nav-icon">📍</span>
-      <span class="nav-label">Fichaje</span>
+      <span class="nav-label">Ubicación</span>
     </div>
     <div class="nav-item" id="nav-reporte" onclick="cambiarPanel('reporte')">
       <span class="nav-icon">📋</span>
@@ -1547,8 +1544,9 @@ window.onload=function(){
   };
   document.head.appendChild(s1);
 };
-</script
+</script>
 
+<script>
 // PWA Install
 var deferredPrompt;
 window.addEventListener('beforeinstallprompt',function(e){
@@ -1989,6 +1987,8 @@ function cargarReportesAdmin(){
 
 <script>
 // FICHAJE + GPS
+var mapsReady = false;
+function onMapsLoaded(){ mapsReady = true; }
 var jornadaActiva = false;
 var jornadaId = null;
 var timerInterval = null;
@@ -2241,6 +2241,8 @@ function cargarHistorialAdmin(){
 
 
 <script>
+var mapsReady = false;
+function onMapsLoaded(){ mapsReady = true; }
 var jornadaActiva = false;
 var jornadaInicio = null;
 var timerInterval = null;
@@ -2380,10 +2382,14 @@ function startGPS(email){
 
 function initMapaAdmin(){
   var mapDiv = document.getElementById('mapaAdmin');
-  if(!mapDiv || !window.google) return;
+  if(!mapDiv) return;
+  if(!window.google || !window.google.maps){
+    setTimeout(initMapaAdmin, 500);
+    return;
+  }
   mapaInstance = new google.maps.Map(mapDiv, {
     zoom: 12,
-    center: {lat: -12.0464, lng: -77.0428}, // Lima
+    center: {lat: -12.0464, lng: -77.0428},
     mapTypeId: 'roadmap'
   });
 }
@@ -2414,7 +2420,7 @@ function cargarEmpleadosActivos(){
         html += '<div class="emp-avatar">'+inicial+'</div>';
         html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
         html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
-        html += '<button onclick="verRutaEmpleado(''+d.email+'')" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
+        html += '<button onclick="verRutaEmpleado(&#39;'+d.email+'&#39;)" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
         html += '</div>';
       } else {
         if(marcadoresEmpleados[d.email]){
@@ -2465,7 +2471,7 @@ function cargarHistorialAdmin(){
       html+='<div class="hist-detalle">Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div>';
       if(d.fin) html+='<div class="hist-detalle">Salida: '+new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+' | '+d.horasTrabajadas+'</div>';
       else html+='<div class="hist-detalle" style="color:#16a34a;">🟢 Activo</div>';
-      html+='<button onclick="verRutaFecha(''+d.email+'',''+fecha+'')" style="margin-top:6px;background:#2f5597;color:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;">Ver ruta en mapa</button>';
+      html+='<button data-email="'+d.email+'" data-fecha="'+fecha+'" onclick="verRutaFecha(this.dataset.email,this.dataset.fecha)" style="margin-top:6px;background:#2f5597;color:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;">Ver ruta en mapa</button>';
       html+='</div>';
     });
     lista.innerHTML=html;
