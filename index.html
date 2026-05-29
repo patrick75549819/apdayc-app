@@ -2538,19 +2538,31 @@ function cargarHistorialAdmin(){
   lista.innerHTML = '<div class="loading">Cargando...</div>';
   var db = firebase.firestore();
   db.collection('fichajes').where('fecha','==',fecha).get().then(function(snap){
-    if(snap.empty){ lista.innerHTML='<div class="no-reporte">Sin registros.</div>'; return; }
+    if(snap.empty){ 
+      lista.innerHTML='<div class="no-reporte">Sin registros para esta fecha.</div>'; 
+      return; 
+    }
     var html='';
     snap.forEach(function(doc){
       var d=doc.data();
+      var entrada = d.inicio ? new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '--';
+      var salida = d.fin ? new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : null;
+      var puntos = d.totalPuntos || (d.ruta ? d.ruta.length : 0);
       html+='<div class="hist-item">';
-      html+='<div class="hist-fecha">👤 '+d.nombre+'</div>';
-      html+='<div class="hist-detalle">Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div>';
-      if(d.fin) html+='<div class="hist-detalle">Salida: '+new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+' | '+d.horasTrabajadas+'</div>';
-      else html+='<div class="hist-detalle" style="color:#16a34a;">🟢 Activo</div>';
-      html+='<button data-email="'+d.email+'" data-fecha="'+fecha+'" onclick="verRutaFecha(this.dataset.email,this.dataset.fecha)" style="margin-top:6px;background:#2f5597;color:white;border:none;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;">Ver ruta en mapa</button>';
+      html+='<div class="hist-fecha">👤 '+(d.nombre||d.email)+'</div>';
+      html+='<div class="hist-detalle">▶ Entrada: '+entrada+'</div>';
+      if(salida){
+        html+='<div class="hist-detalle">⏹ Salida: '+salida+' — '+(d.horasTrabajadas||'')+'</div>';
+      } else {
+        html+='<div class="hist-detalle" style="color:#16a34a;">🟢 Jornada activa</div>';
+      }
+      html+='<div class="hist-detalle">📍 '+puntos+' puntos GPS registrados</div>';
+      html+='<button data-email="'+d.email+'" data-fecha="'+fecha+'" onclick="verRutaFecha(this.dataset.email,this.dataset.fecha)" style="margin-top:8px;width:100%;background:#2f5597;color:white;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">🗺️ Ver ruta en mapa</button>';
       html+='</div>';
     });
     lista.innerHTML=html;
+  }).catch(function(e){
+    lista.innerHTML='<div class="no-reporte">Error: '+e.message+'</div>';
   });
 }
 
