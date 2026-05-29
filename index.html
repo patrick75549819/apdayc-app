@@ -2380,10 +2380,12 @@ function finalizarJornada(){
   var db = firebase.firestore();
   var email = currentUserEmail;
   var nombre = USUARIOS[email.toLowerCase()]||email.split('@')[0];
+  // Save complete route on finalize
   db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
     fin: fin.toISOString(),
     horasTrabajadas: horasStr,
     ruta: rutaActual,
+    totalPuntos: rutaActual.length,
     activo: false
   });
   // Notify admins via Firestore
@@ -2436,7 +2438,7 @@ function startGPS(email){
     var punto = {lat: pos.coords.latitude, lng: pos.coords.longitude, t: new Date().toISOString()};
     rutaActual.push(punto);
     // Update every 10 points to save bandwidth
-    if(rutaActual.length % 10 === 0){
+    if(rutaActual.length % 5 === 0){
       var db = firebase.firestore();
       db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
         ruta: rutaActual,
@@ -2555,19 +2557,50 @@ function cargarHistorialAdmin(){
 function verRutaFecha(email, fecha){
   var db = firebase.firestore();
   db.collection('fichajes').doc(fecha+'_'+email).get().then(function(doc){
-    if(!doc.exists || !doc.data().ruta) return;
-    var ruta = doc.data().ruta;
-    if(!mapaInstance) initMapaAdmin();
-    if(rutaPolyline) rutaPolyline.setMap(null);
-    var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
-    rutaPolyline = new google.maps.Polyline({
-      path: path, geodesic: true,
-      strokeColor: '#dc2626', strokeOpacity: 1.0, strokeWeight: 3
-    });
-    rutaPolyline.setMap(mapaInstance);
-    if(path.length > 0) mapaInstance.panTo(path[0]);
-    document.getElementById('panelFichaje').scrollTop=0;
-    window.scrollTo(0,0);
+    if(!doc.exists){ alert('No se encontró el registro.'); return; }
+    var d = doc.data();
+    var ruta = d.ruta || [];
+    if(ruta.length === 0){ alert('No hay ruta registrada para este empleado en esa fecha.'); return; }
+    
+    // Init map if needed
+    if(!mapaInstance){ initMapaAdmin(); }
+    setTimeout(function(){
+      if(rutaPolyline) rutaPolyline.setMap(null);
+      var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
+      
+      // Draw route
+      rutaPolyline = new google.maps.Polyline({
+        path: path, geodesic: true,
+        strokeColor: '#dc2626', strokeOpacity: 1.0, strokeWeight: 4
+      });
+      rutaPolyline.setMap(mapaInstance);
+      
+      // Add start marker (green)
+      new google.maps.Marker({
+        position: path[0], map: mapaInstance,
+        title: 'Inicio',
+        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
+               fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+      });
+      // Add end marker (red)
+      new google.maps.Marker({
+        position: path[path.length-1], map: mapaInstance,
+        title: 'Fin',
+        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
+               fillColor: '#dc2626', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+      });
+      
+      // Fit map to route
+      var bounds = new google.maps.LatLngBounds();
+      path.forEach(function(p){ bounds.extend(p); });
+      mapaInstance.fitBounds(bounds);
+      
+      // Scroll to map
+      window.scrollTo(0,0);
+      alert('Ruta de '+d.nombre+': '+ruta.length+' puntos registrados. Inicio: '+
+            new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+
+            (d.fin?' | Fin: '+new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):''));
+    }, 500);
   });
 }
 
