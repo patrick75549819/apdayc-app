@@ -423,14 +423,11 @@ select.form-input{cursor:pointer;}
       <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">0.00</span></div>
     </div>
 
-    <div class="meta-goal-row">
-      <input type="number" class="meta-goal-input" id="metaGoalInput" placeholder="Meta total S/" min="0" step="0.01">
-      <button class="meta-goal-btn" onclick="setMeta()">Fijar Meta</button>
-    </div>
 
-    <div style="display:flex;gap:8px;margin-bottom:8px;">
-      <input type="text" id="metaNombre" placeholder="NOMBRE DEL LOCAL" style="flex:2;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;text-transform:uppercase;">
-      <input type="number" id="metaMonto" placeholder="S/" min="0" step="0.01" style="flex:1;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;">
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+      <input type="text" id="metaNombre" placeholder="NOMBRE DEL LOCAL" style="flex:1;min-width:0;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;text-transform:uppercase;box-sizing:border-box;">
+      <input type="number" id="metaMonto" placeholder="S/" min="0" step="0.01" style="width:90px;flex-shrink:0;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;box-sizing:border-box;">
     </div>
     <button class="meta-add-btn" style="width:100%;margin-bottom:16px;" onclick="agregarMeta()">+ Agregar Local</button>
 
@@ -490,6 +487,7 @@ select.form-input{cursor:pointer;}
     <br>
     <!-- VISTA EMPLEADO -->
     <div id="fichajeEmpleado">
+      <div id="fichajeControles">
       <div class="fichaje-card">
         <div class="fichaje-status">
           <div class="status-dot" id="statusDot"></div>
@@ -543,7 +541,7 @@ select.form-input{cursor:pointer;}
         <button class="btn-finalizar btn-disabled" id="btnFinalizar" onclick="finalizarJornada()" disabled>⏹ Finalizar Jornada</button>
       </div>
 
-      <div id="historialPropio"></div>
+
     </div>
 
     <!-- VISTA ADMIN FICHAJE -->
@@ -555,8 +553,11 @@ select.form-input{cursor:pointer;}
       </div>
       <div class="fichaje-card">
         <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:10px;">📅 Ver historial por fecha</div>
-        <input type="date" class="calendar-input" id="fechaFichaje" onchange="cargarHistorialAdmin()">
-        <div id="historialAdmin"></div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="date" class="calendar-input" id="fechaFichaje" style="margin-bottom:0;flex:1;">
+          <button onclick="cargarHistorialAdmin()" style="background:#2f5597;color:white;border:none;border-radius:10px;padding:12px 16px;font-weight:700;cursor:pointer;white-space:nowrap;">🔍 Buscar</button>
+        </div>
+        <div id="historialAdmin"><div class="no-reporte">Selecciona una fecha y presiona Buscar</div></div>
       </div>
       <div class="fichaje-card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -1709,9 +1710,7 @@ function saveMeta(){
 }
 
 function setMeta(){
-  var val = parseFloat(document.getElementById('metaGoalInput').value)||0;
-  if(val<=0){ alert('Ingresa una meta válida'); return; }
-  metaData.goal = val;
+  metaData.goal = 1000;
   saveMeta();
 }
 
@@ -1747,7 +1746,7 @@ function renderMeta(){
   document.getElementById('metaFill').style.width = pct+'%';
   document.getElementById('metaSum').innerText = total.toFixed(2);
   document.getElementById('metaGoal').innerText = goal.toFixed(2);
-  document.getElementById('metaGoalInput').value = goal>0?goal:1000;
+  // meta fixed at 1000
 
   // Update home card
   document.getElementById('homeMetaPct').innerText = pct+'%';
@@ -2312,7 +2311,8 @@ function initFichaje(email, isAdmin){
   document.getElementById('fechaFichaje') && (document.getElementById('fechaFichaje').value = getTodayStr());
 
   if(isAdmin){
-    document.getElementById('fichajeEmpleado').style.display='block';
+    var fc = document.getElementById('fichajeControles');
+    if(fc) fc.style.display='none';
     document.getElementById('fichajeAdmin').style.display='block';
     initMapaAdmin();
     cargarEmpleadosActivos();
