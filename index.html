@@ -1594,8 +1594,10 @@ window.onload=function(){
 </script>
 
 <script>
-var ADMINS = ["psara@gciperu.com","ccabelloc@gciperu.com"];
-var USUARIOS = {"psara@gciperu.com": "Patrick", "ecalderon@gciperu.com": "Ernesto", "rvasquez@gciperu.com": "Ronald", "ptorres@gciperu.com": "Pedro", "rdiaz@gciperu.com": "Ruben", "mherrera@gciperu.com": "Martin", "jhuaman@gciperu.com": "Juan", "jleon@gciperu.com": "Jhony", "gynga@gciperu.com": "Gabriela", "hsalazar@gciperu.com": "Harry", "ccabelloc@gciperu.com": "Christian", "herberta@gciperu.com": "Herbert", "mfranco@gciperu.com": "Mayra", "rperez@gciperu.com": "Richard", "mangel@gciperu.com": "Miguel"};
+var ADMINS = ["psara@gciperu.com","ccabelloc@gciperu.com","ptorres@gciperu.com","jessicah@gciperu.com"];
+var ADMINS_CON_RUTA = ["ptorres@gciperu.com"]; // Admins que tambien fichan
+var ADMINS_SIN_RUTA = ["psara@gciperu.com","ccabelloc@gciperu.com","jessicah@gciperu.com"]; // Solo ven mapa
+var USUARIOS = {"psara@gciperu.com": "Patrick", "ecalderon@gciperu.com": "Ernesto", "rvasquez@gciperu.com": "Ronald", "ptorres@gciperu.com": "Pedro", "rdiaz@gciperu.com": "Ruben", "mherrera@gciperu.com": "Martin", "jhuaman@gciperu.com": "Juan", "jleon@gciperu.com": "Jhony", "gynga@gciperu.com": "Gabriela", "hsalazar@gciperu.com": "Harry", "ccabelloc@gciperu.com": "Christian", "herberta@gciperu.com": "Herbert", "mfranco@gciperu.com": "Mayra", "rperez@gciperu.com": "Richard", "mangel@gciperu.com": "Miguel", "jessicah@gciperu.com": "Jessica"};
 var auth;
 function togglePass(){
   var input=document.getElementById('loginPass');
@@ -2312,9 +2314,11 @@ function initFichaje(email, isAdmin){
   var hoy = new Date();
   document.getElementById('fechaFichaje') && (document.getElementById('fechaFichaje').value = getTodayStr());
 
+  var isAdminSinRuta = ADMINS_SIN_RUTA.indexOf(email.toLowerCase())>-1;
+  var isAdminConRuta = ADMINS_CON_RUTA.indexOf(email.toLowerCase())>-1;
   if(isAdmin){
     var fc = document.getElementById('fichajeControles');
-    if(fc) fc.style.display='none';
+    if(fc) fc.style.display = isAdminConRuta ? 'block' : 'none';
     document.getElementById('fichajeAdmin').style.display='block';
     initMapaAdmin();
     cargarEmpleadosActivos();
@@ -2534,14 +2538,16 @@ function verRutaEmpleado(email){
 }
 
 function cargarHistorialAdmin(){
-  var fecha = document.getElementById('fechaFichaje').value;
-  if(!fecha) return;
+  var fechaInput = document.getElementById('fechaFichaje').value;
+  if(!fechaInput){ alert('Selecciona una fecha'); return; }
+  // Convert from input format (YYYY-MM-DD) to stored format
+  var fecha = fechaInput; // already YYYY-MM-DD
   var lista = document.getElementById('historialAdmin');
-  lista.innerHTML = '<div class="loading">Cargando...</div>';
+  lista.innerHTML = '<div class="loading">🔍 Buscando registros...</div>';
   var db = firebase.firestore();
   db.collection('fichajes').where('fecha','==',fecha).get().then(function(snap){
     if(snap.empty){ 
-      lista.innerHTML='<div class="no-reporte">Sin registros para esta fecha.</div>'; 
+      lista.innerHTML='<div class="no-reporte">No hay registros para el '+fecha+'</div>'; 
       return; 
     }
     var html='';
@@ -2558,13 +2564,17 @@ function cargarHistorialAdmin(){
       } else {
         html+='<div class="hist-detalle" style="color:#16a34a;">🟢 Jornada activa</div>';
       }
-      html+='<div class="hist-detalle">📍 '+puntos+' puntos GPS registrados</div>';
-      html+='<button data-email="'+d.email+'" data-fecha="'+fecha+'" onclick="verRutaFecha(this.dataset.email,this.dataset.fecha)" style="margin-top:8px;width:100%;background:#2f5597;color:white;border:none;border-radius:8px;padding:8px;font-size:12px;font-weight:700;cursor:pointer;">🗺️ Ver ruta en mapa</button>';
+      html+='<div class="hist-detalle">📍 '+puntos+' puntos GPS</div>';
+      if(puntos > 0){
+        html+='<button data-email="'+d.email+'" data-fecha="'+fecha+'" onclick="verRutaFecha(this.dataset.email,this.dataset.fecha)" style="margin-top:8px;width:100%;background:#2f5597;color:white;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">🗺️ Ver ruta del día</button>';
+      } else {
+        html+='<div class="hist-detalle" style="color:#dc2626;">Sin puntos GPS registrados</div>';
+      }
       html+='</div>';
     });
     lista.innerHTML=html;
   }).catch(function(e){
-    lista.innerHTML='<div class="no-reporte">Error: '+e.message+'</div>';
+    lista.innerHTML='<div class="no-reporte">Error al cargar: '+e.message+'</div>';
   });
 }
 
