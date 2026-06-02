@@ -420,17 +420,9 @@ select.form-input{cursor:pointer;}
       <div style="font-size:13px;opacity:0.8;margin-bottom:4px;">META DE EMPADRONAMIENTO</div>
       <div class="meta-pct" id="metaPct">0%</div>
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
-      <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">0.00</span></div>
+      <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">2,000.00</span></div>
     </div>
-
-
-
-    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
-      <input type="text" id="metaNombre" placeholder="NOMBRE DEL LOCAL" style="flex:1;min-width:0;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;text-transform:uppercase;box-sizing:border-box;">
-      <input type="number" id="metaMonto" placeholder="S/" min="0" step="0.01" style="width:90px;flex-shrink:0;padding:12px;border:2px solid #2f5597;border-radius:10px;font-size:13px;box-sizing:border-box;">
-    </div>
-    <button class="meta-add-btn" style="width:100%;margin-bottom:16px;" onclick="agregarMeta()">+ Agregar Local</button>
-
+    <div id="metaLoadingMsg" style="text-align:center;color:#888;padding:20px;font-size:13px;">Cargando datos...</div>
     <div id="metaLista"></div>
   </div>
 
@@ -1696,95 +1688,152 @@ document.addEventListener('keydown',function(e){
 
 
 <script>
-// META DE EMPADRONAMIENTO - stored in localStorage per user
-var metaData = {goal: 1000, items: []};
-var metaUserKey = 'meta_apdayc';
+// META DE EMPADRONAMIENTO - lee Google Sheets por usuario
+var metaData = {goal: 2000, items: []};
+// Mapeo email → nombre de hoja en Google Sheets
+var META_EMAIL_HOJA = {
+  'jessicah@gciperu.com':  'JESSICA',
+  'mfranco@gciperu.com':   'MAYRA',
+  'rperez@gciperu.com':    'RICHARD',
+  'hsalazar@gciperu.com':  'HARRY',
+  'jleon@gciperu.com':     'JHONY',
+  'jhuaman@gciperu.com':   'JUAN',
+  'mherrera@gciperu.com':  'MARTIN',
+  'ptorres@gciperu.com':   'PEDRO',
+  'ecalderon@gciperu.com': 'ERNESTO',
+  'rdiaz@gciperu.com':     'RUBEN',
+  'gynga@gciperu.com':     'GABRIELA',
+  'mangel@gciperu.com':    'MIGUEL',
+  'rvasquez@gciperu.com':  'RONALD',
+  'herberta@gciperu.com':  'HERBERT',
+  'psara@gciperu.com':     'PATRICK',
+  'ccabelloc@gciperu.com': 'CHRISTIAN'
+};
 
-function loadMeta(){
-  try{
-    var saved = localStorage.getItem(metaUserKey);
-    if(saved) metaData = JSON.parse(saved);
-  }catch(e){}
-  renderMeta();
+var META_ADMINS = ['psara@gciperu.com','ccabelloc@gciperu.com','jessicah@gciperu.com','ptorres@gciperu.com'];
+var META_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
+var META_GOAL = 2000;
+
+function getSheetCsvUrl(sheetName){
+  var encoded = encodeURIComponent(sheetName);
+  return 'https://corsproxy.io/?' + encodeURIComponent(
+    'https://docs.google.com/spreadsheets/d/'+META_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet='+encoded
+  );
 }
 
-function saveMeta(){
-  localStorage.setItem(metaUserKey, JSON.stringify(metaData));
-  renderMeta();
+function parseCsvMeta(csv){
+  var lines = csv.trim().split('\n');
+  var items = [];
+  for(var i=1;i<lines.length;i++){
+    var line = lines[i].trim();
+    if(!line) continue;
+    var cols = [], inQ=false, cur='';
+    for(var c=0;c<line.length;c++){
+      if(line[c]==='"'){ inQ=!inQ; }
+      else if(line[c]===','&&!inQ){ cols.push(cur); cur=''; }
+      else { cur+=line[c]; }
+    }
+    cols.push(cur);
+    var nombre = (cols[0]||'').trim().toUpperCase();
+    var tarifa = parseFloat((cols[1]||'').replace(',','.').trim())||0;
+    var estado = (cols[2]||'').trim().toUpperCase();
+    if(nombre) items.push({nombre:nombre, tarifa:tarifa, estado:estado});
+  }
+  return items;
 }
 
-function setMeta(){
-  metaData.goal = 1000;
-  saveMeta();
-}
-
-function agregarMeta(){
-  var nombre = document.getElementById('metaNombre').value.trim().toUpperCase();
-  var monto = parseFloat(document.getElementById('metaMonto').value)||0;
-  if(!nombre){ alert('Ingresa el nombre del local'); return; }
-  if(monto<=0){ alert('Ingresa un monto válido'); return; }
-  metaData.items.push({id: Date.now(), nombre: nombre, monto: monto, estado: 'pendiente'});
-  document.getElementById('metaNombre').value='';
-  document.getElementById('metaMonto').value='';
-  saveMeta();
-}
-
-function toggleEstadoMeta(id){
-  var item = metaData.items.find(function(x){ return x.id===id; });
-  if(item) item.estado = item.estado==='pagado'?'pendiente':'pagado';
-  saveMeta();
-}
-
-function eliminarMeta(id){
-  metaData.items = metaData.items.filter(function(x){ return x.id!==id; });
-  saveMeta();
-}
-
-function renderMeta(){
-  var total = metaData.items.reduce(function(s,x){ return s+x.monto; }, 0);
-  var goal = metaData.goal||0;
-  var pct = goal>0 ? Math.min(100, Math.round(total/goal*100)) : 0;
-
-  // Update meta panel
-  document.getElementById('metaPct').innerText = pct+'%';
-  document.getElementById('metaFill').style.width = pct+'%';
-  document.getElementById('metaSum').innerText = total.toFixed(2);
-  document.getElementById('metaGoal').innerText = goal.toFixed(2);
-  // meta fixed at 1000
-
-  // Update home card
-  document.getElementById('homeMetaPct').innerText = pct+'%';
-  document.getElementById('homeMetaFill').style.width = pct+'%';
-  document.getElementById('homeMetaSum').innerText = total.toFixed(2);
-  document.getElementById('homeMetaGoal').innerText = goal.toFixed(2);
-
-  // Render list
-  var lista = document.getElementById('metaLista');
-  if(metaData.items.length===0){
-    lista.innerHTML='<div class="meta-empty">Aún no has agregado locales.<br>Usa el formulario para comenzar.</div>';
+function renderMetaItems(items, containerEl){
+  if(!items||items.length===0){
+    containerEl.innerHTML='<div class="meta-empty">No hay locales registrados.</div>';
     return;
   }
-  var html = '';
-  // Sort: pagados al final
-  var sorted = metaData.items.slice().sort(function(a,b){ return a.estado==='pagado'?1:-1; });
-  sorted.forEach(function(item){
-    var pagado = item.estado==='pagado';
-    html += '<div class="meta-item">';
-    html += '<div class="meta-item-info">';
-    html += '<div class="meta-item-nombre">'+(pagado?'<s>':'')+item.nombre+(pagado?'</s>':'')+'</div>';
-    html += '<div class="meta-item-monto">S/ '+item.monto.toFixed(2)+'</div>';
-    html += '</div>';
-    html += '<div class="meta-item-actions">';
-    html += '<span class="'+(pagado?'meta-badge-pag':'meta-badge-pen')+'" onclick="toggleEstadoMeta('+item.id+')">'+
-            (pagado?'PAGADO':'PENDIENTE')+'</span>';
-    html += '<button class="meta-del-btn" onclick="eliminarMeta('+item.id+')">🗑</button>';
-    html += '</div></div>';
+  var sorted = items.slice().sort(function(a,b){
+    return (a.estado==='PAGADO'?1:0)-(b.estado==='PAGADO'?1:0);
   });
-  lista.innerHTML = html;
+  var html='';
+  sorted.forEach(function(item){
+    var pagado = item.estado==='PAGADO';
+    html+='<div class="meta-item">';
+    html+='<div class="meta-item-info">';
+    html+='<div class="meta-item-nombre">'+(pagado?'<s>':'')+item.nombre+(pagado?'</s>':'')+'</div>';
+    html+='<div class="meta-item-monto">S/ '+item.tarifa.toFixed(2)+'</div>';
+    html+='</div>';
+    html+='<div class="meta-item-actions">';
+    html+='<span class="'+(pagado?'meta-badge-pag':'meta-badge-pen')+'">'+item.estado+'</span>';
+    html+='</div></div>';
+  });
+  containerEl.innerHTML=html;
+}
+
+function actualizarHeaderMeta(suma, goal, pct){
+  document.getElementById('metaPct').innerText  = pct+'%';
+  document.getElementById('metaFill').style.width = pct+'%';
+  document.getElementById('metaSum').innerText  = suma.toFixed(2);
+  document.getElementById('metaGoal').innerText = goal.toFixed(2);
+  document.getElementById('homeMetaPct').innerText  = pct+'%';
+  document.getElementById('homeMetaFill').style.width = pct+'%';
+  document.getElementById('homeMetaSum').innerText  = suma.toFixed(2);
+  document.getElementById('homeMetaGoal').innerText = goal.toFixed(2);
+}
+
+function loadMeta(){
+  var email = '';
+  try{ email = firebase.auth().currentUser ? firebase.auth().currentUser.email : ''; }catch(e){}
+  if(!email){ setTimeout(loadMeta, 800); return; }
+
+  var loadingEl = document.getElementById('metaLoadingMsg');
+  var listaEl   = document.getElementById('metaLista');
+  if(loadingEl) loadingEl.style.display='block';
+  if(listaEl)   listaEl.innerHTML='';
+
+  var esAdmin = META_ADMINS.indexOf(email)>-1;
+  var hoja    = META_EMAIL_HOJA[email];
+
+  if(esAdmin){
+    var todasHojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
+    var promises = todasHojas.map(function(h){
+      return fetch(getSheetCsvUrl(h)).then(function(r){ return r.text(); }).then(function(csv){
+        return {hoja:h, items:parseCsvMeta(csv)};
+      }).catch(function(){ return {hoja:h, items:[]}; });
+    });
+    Promise.all(promises).then(function(resultados){
+      if(loadingEl) loadingEl.style.display='none';
+      var totalPagado=0;
+      var html='';
+      resultados.forEach(function(res){
+        var pagado = res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+        totalPagado += pagado;
+        var pctH = Math.min(100,Math.round(pagado/META_GOAL*100));
+        html+='<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+        html+='<div style="font-size:13px;font-weight:800;color:#2f5597;margin-bottom:6px;">👤 '+res.hoja+'</div>';
+        html+='<div style="font-size:12px;color:#444;">Pagado: <b>S/ '+pagado.toFixed(2)+'</b> / S/ '+META_GOAL.toFixed(2)+' — <b>'+pctH+'%</b></div>';
+        html+='<div style="background:#e5e7eb;border-radius:20px;height:6px;margin-top:6px;overflow:hidden;">';
+        html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
+        html+='</div>';
+      });
+      if(listaEl) listaEl.innerHTML=html;
+      var pctTotal = Math.min(100,Math.round(totalPagado/(META_GOAL*todasHojas.length)*100));
+      actualizarHeaderMeta(totalPagado, META_GOAL*todasHojas.length, pctTotal);
+    });
+  } else if(hoja){
+    fetch(getSheetCsvUrl(hoja)).then(function(r){ return r.text(); }).then(function(csv){
+      if(loadingEl) loadingEl.style.display='none';
+      var items = parseCsvMeta(csv);
+      var pagado = items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+      var pct = Math.min(100,Math.round(pagado/META_GOAL*100));
+      actualizarHeaderMeta(pagado, META_GOAL, pct);
+      renderMetaItems(items, listaEl);
+    }).catch(function(){
+      if(loadingEl) loadingEl.innerText='Error al cargar datos. Intenta de nuevo.';
+    });
+  } else {
+    if(loadingEl) loadingEl.innerText='No tienes una hoja asignada.';
+  }
 }
 
 // Load meta when app opens
 document.addEventListener('DOMContentLoaded', loadMeta);
+
 
 function verResumenMensual(){
   var fecha = document.getElementById('fechaAdmin').value;
