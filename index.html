@@ -125,8 +125,8 @@ select.form-input{cursor:pointer;}
 .meta-item-nombre{font-size:13px;font-weight:700;color:#1a1a2e;}
 .meta-item-monto{font-size:12px;color:#2f5597;font-weight:600;margin-top:2px;}
 .meta-item-actions{display:flex;gap:6px;align-items:center;}
-.meta-badge-pag{background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;}
-.meta-badge-pen{background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;}
+.meta-badge-pag{background:#d1fae5;color:#065f46;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.meta-badge-pen{background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
 .meta-del-btn{background:none;border:none;color:#dc2626;font-size:16px;cursor:pointer;padding:0 4px;}
 .meta-empty{text-align:center;color:#888;padding:30px;font-size:14px;}
 .meta-goal-row{display:flex;gap:8px;margin-bottom:16px;align-items:center;}
@@ -1758,11 +1758,11 @@ function renderMetaItems(items, containerEl){
     return;
   }
   var sorted = items.slice().sort(function(a,b){
-    return (a.estado==='PAGADO'?1:0)-(b.estado==='PAGADO'?1:0);
+    return (a.estado==='COBRADO'?1:0)-(b.estado==='COBRADO'?1:0);
   });
   var html='';
   sorted.forEach(function(item){
-    var pagado=item.estado==='PAGADO';
+    var pagado=item.estado==='COBRADO';
     html+='<div class="meta-item">';
     html+='<div class="meta-item-info">';
     html+='<div class="meta-item-nombre">'+(pagado?'<s>':'')+item.nombre+(pagado?'</s>':'')+'</div>';
@@ -1787,7 +1787,7 @@ function actualizarHeaderMeta(suma, goal, pct){
 }
 
 function buildAgentBlock(nombre, items, goal){
-  var pagado=items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+  var pagado=items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
   var pctH=Math.min(100,Math.round(pagado/goal*100));
   var html='';
   html+='<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
@@ -1797,7 +1797,7 @@ function buildAgentBlock(nombre, items, goal){
   html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
   html+='<div style="margin-top:10px;">';
   items.forEach(function(item){
-    var p=item.estado==='PAGADO';
+    var p=item.estado==='COBRADO';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">';
     html+='<span style="color:#333;">'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</span>';
     html+='<span style="display:flex;gap:6px;align-items:center;"><span style="color:#2f5597;font-weight:600;">S/ '+item.tarifa.toFixed(2)+'</span>';
@@ -1829,7 +1829,7 @@ function metaRenderAdmin(agenteSel){
     var html='', totalP=0, totalG=0;
     claves.forEach(function(hoja){
       var res=_metaCache[hoja];
-      totalP+=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+      totalP+=res.items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
       totalG+=res.goal;
       html+=buildAgentBlock(hoja, res.items, res.goal);
     });
@@ -1839,7 +1839,7 @@ function metaRenderAdmin(agenteSel){
   } else {
     var res=_metaCache[_metaAgenteSel];
     if(!res){ listaEl.innerHTML='<div class="meta-empty">Sin datos.</div>'; return; }
-    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
     var pct=Math.min(100,Math.round(pagado/res.goal*100));
     actualizarHeaderMeta(pagado, res.goal, pct);
     listaEl.innerHTML=buildAgentBlock(_metaAgenteSel, res.items, res.goal);
@@ -1908,7 +1908,7 @@ function loadMeta(){
     fetch(getSheetCsvUrl(hoja)).then(function(r){ return r.text(); }).then(function(csv){
       if(loadingEl) loadingEl.style.display='none';
       var items=parseCsvMeta(csv);
-      var pagado=items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+      var pagado=items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
       var pct=Math.min(100,Math.round(pagado/META_GOAL*100));
       actualizarHeaderMeta(pagado, META_GOAL, pct);
       renderMetaItems(items, listaEl);
@@ -1942,7 +1942,7 @@ function descargarReporteTotalPDF(){
   claves.forEach(function(hoja){
     var res=_metaCache[hoja];
     var goal=res.goal;
-    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
     totalGenP+=pagado;
     totalGenG+=goal;
     var pct=Math.min(100,Math.round(pagado/goal*100));
@@ -1972,7 +1972,7 @@ function descargarReporteTotalPDF(){
       doc.setFont('helvetica','normal');
       res.items.forEach(function(item){
         if(y>270){ doc.addPage(); y=18; }
-        var pagado2=item.estado==='PAGADO';
+        var pagado2=item.estado==='COBRADO';
         doc.setTextColor(pagado2?100:negro[0], pagado2?100:negro[1], pagado2?100:negro[2]);
         doc.setFontSize(7);
         var nom=item.nombre.length>38?item.nombre.substring(0,35)+'...':item.nombre;
