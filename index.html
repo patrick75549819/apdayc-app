@@ -1732,7 +1732,7 @@ function getSheetCsvUrl(sheetName){
 }
 
 function parseCsvMeta(csv){
-  var lines = csv.trim().split('\n');
+  var lines = csv.trim().replace(/\r/g,'').split('\n');
   var items = [];
   for(var i=1;i<lines.length;i++){
     var line = lines[i].trim();
