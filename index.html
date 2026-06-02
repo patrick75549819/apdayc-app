@@ -422,6 +422,9 @@ select.form-input{cursor:pointer;}
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
       <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">2,000.00</span></div>
     </div>
+    <div id="metaBtnAdmin" style="display:none;margin-bottom:12px;">
+      <button onclick="descargarReporteTotalPDF()" style="width:100%;background:#1e3a6e;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;">📥 Descargar Reporte Total PDF</button>
+    </div>
     <div id="metaLoadingMsg" style="text-align:center;color:#888;padding:20px;font-size:13px;">Cargando datos...</div>
     <div id="metaLista"></div>
   </div>
@@ -465,10 +468,11 @@ select.form-input{cursor:pointer;}
         <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">📅 Ver reportes por fecha</div>
         <input type="date" class="calendar-input" id="fechaAdmin" onchange="cargarReportesAdmin()">
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
       <button onclick="cargarReportesAdmin()" style="flex:1;padding:10px;background:#2f5597;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;">Ver día</button>
       <button onclick="verResumenMensual()" style="flex:1;padding:10px;background:#1e3a6e;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;">📊 Resumen mes</button>
     </div>
+    <button onclick="descargarReporteDiarioPDF()" style="width:100%;padding:10px;background:#065f46;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;margin-bottom:12px;">📥 Descargar Reporte PDF</button>
     <div id="listaReportesAdmin"></div>
     </div>
   </div>
@@ -1691,28 +1695,36 @@ document.addEventListener('keydown',function(e){
 // META DE EMPADRONAMIENTO - lee Google Sheets por usuario
 var metaData = {goal: 2000, items: []};
 // Mapeo email → nombre de hoja en Google Sheets
+// Mapeo email → nombre de hoja en Google Sheets
 var META_EMAIL_HOJA = {
-  'jessicah@gciperu.com':  'JESSICA',
-  'mfranco@gciperu.com':   'MAYRA',
-  'rperez@gciperu.com':    'RICHARD',
-  'hsalazar@gciperu.com':  'HARRY',
-  'jleon@gciperu.com':     'JHONY',
-  'jhuaman@gciperu.com':   'JUAN',
-  'mherrera@gciperu.com':  'MARTIN',
   'ptorres@gciperu.com':   'PEDRO',
-  'ecalderon@gciperu.com': 'ERNESTO',
-  'rdiaz@gciperu.com':     'RUBEN',
+  'mherrera@gciperu.com':  'MARTIN',
+  'jleon@gciperu.com':     'JHONY',
   'gynga@gciperu.com':     'GABRIELA',
-  'mangel@gciperu.com':    'MIGUEL',
+  'rdiaz@gciperu.com':     'RUBEN',
+  'ecalderon@gciperu.com': 'ERNESTO',
   'rvasquez@gciperu.com':  'RONALD',
-  'herberta@gciperu.com':  'HERBERT',
-  'psara@gciperu.com':     'PATRICK',
-  'ccabelloc@gciperu.com': 'CHRISTIAN'
+  'jhuaman@gciperu.com':   'JUAN'
 };
+// OFICINA es una hoja especial con meta propia
+var META_OFICINA_HOJA = 'OFICINA';
+var META_OFICINA_GOAL = 3000;
 
-var META_ADMINS = ['psara@gciperu.com','ccabelloc@gciperu.com','jessicah@gciperu.com','ptorres@gciperu.com'];
+// Admins: pueden ver todo + descargar reporte
+var META_ADMINS = [
+  'mfranco@gciperu.com',   // MAYRA
+  'jessicah@gciperu.com',  // JESSICA
+  'psara@gciperu.com',     // PATRICK
+  'ccabelloc@gciperu.com', // CHRISTIAN
+  'hsalazar@gciperu.com',  // HARRY
+  'ptorres@gciperu.com'    // PEDRO (admin + agente)
+];
+
 var META_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
 var META_GOAL = 2000;
+
+// Cache de datos para el PDF
+var _metaCache = {};
 
 function getSheetCsvUrl(sheetName){
   var encoded = encodeURIComponent(sheetName);
@@ -1776,6 +1788,29 @@ function actualizarHeaderMeta(suma, goal, pct){
   document.getElementById('homeMetaGoal').innerText = goal.toFixed(2);
 }
 
+function buildAgentBlock(nombre, items, goal){
+  var pagado = items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+  var pctH = Math.min(100,Math.round(pagado/goal*100));
+  var html='';
+  html+='<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
+  html+='<div style="font-size:13px;font-weight:800;color:#2f5597;margin-bottom:4px;">👤 '+nombre+' <span style="font-size:11px;font-weight:600;color:#666;">('+pctH+'%)</span></div>';
+  html+='<div style="font-size:12px;color:#444;margin-bottom:6px;">S/ '+pagado.toFixed(2)+' pagado de S/ '+goal.toFixed(2)+'</div>';
+  html+='<div style="background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden;">';
+  html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
+  // Detalle de locales
+  html+='<div style="margin-top:10px;">';
+  items.forEach(function(item){
+    var p = item.estado==='PAGADO';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">';
+    html+='<span style="color:#333;">'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</span>';
+    html+='<span style="display:flex;gap:6px;align-items:center;"><span style="color:#2f5597;font-weight:600;">S/ '+item.tarifa.toFixed(2)+'</span>';
+    html+='<span class="'+(p?'meta-badge-pag':'meta-badge-pen')+'" style="font-size:10px;">'+item.estado+'</span></span>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  return html;
+}
+
 function loadMeta(){
   var email = '';
   try{ email = firebase.auth().currentUser ? firebase.auth().currentUser.email : ''; }catch(e){}
@@ -1783,39 +1818,66 @@ function loadMeta(){
 
   var loadingEl = document.getElementById('metaLoadingMsg');
   var listaEl   = document.getElementById('metaLista');
+  var btnAdmin  = document.getElementById('metaBtnAdmin');
   if(loadingEl) loadingEl.style.display='block';
   if(listaEl)   listaEl.innerHTML='';
 
   var esAdmin = META_ADMINS.indexOf(email)>-1;
-  var hoja    = META_EMAIL_HOJA[email];
+  var esAgente = !!META_EMAIL_HOJA[email];
 
+  if(esAdmin && btnAdmin) btnAdmin.style.display='block';
+
+  // Si es admin: carga todos los agentes + OFICINA
   if(esAdmin){
-    var todasHojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
-    var promises = todasHojas.map(function(h){
-      return fetch(getSheetCsvUrl(h)).then(function(r){ return r.text(); }).then(function(csv){
-        return {hoja:h, items:parseCsvMeta(csv)};
-      }).catch(function(){ return {hoja:h, items:[]}; });
+    var agentes = Object.keys(META_EMAIL_HOJA).map(function(em){
+      return {email:em, hoja:META_EMAIL_HOJA[em]};
     });
-    Promise.all(promises).then(function(resultados){
+    // Agregar OFICINA
+    var hojasFetch = agentes.map(function(a){
+      return fetch(getSheetCsvUrl(a.hoja)).then(function(r){ return r.text(); }).then(function(csv){
+        return {hoja:a.hoja, items:parseCsvMeta(csv), goal:META_GOAL};
+      }).catch(function(){ return {hoja:a.hoja, items:[], goal:META_GOAL}; });
+    });
+    hojasFetch.push(
+      fetch(getSheetCsvUrl(META_OFICINA_HOJA)).then(function(r){ return r.text(); }).then(function(csv){
+        return {hoja:META_OFICINA_HOJA, items:parseCsvMeta(csv), goal:META_OFICINA_GOAL};
+      }).catch(function(){ return {hoja:META_OFICINA_HOJA, items:[], goal:META_OFICINA_GOAL}; })
+    );
+    Promise.all(hojasFetch).then(function(resultados){
       if(loadingEl) loadingEl.style.display='none';
-      var totalPagado=0;
+      _metaCache = {};
       var html='';
+      var totalPagadoGeneral=0, totalGoalGeneral=0;
       resultados.forEach(function(res){
+        _metaCache[res.hoja] = res;
         var pagado = res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-        totalPagado += pagado;
-        var pctH = Math.min(100,Math.round(pagado/META_GOAL*100));
-        html+='<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
-        html+='<div style="font-size:13px;font-weight:800;color:#2f5597;margin-bottom:6px;">👤 '+res.hoja+'</div>';
-        html+='<div style="font-size:12px;color:#444;">Pagado: <b>S/ '+pagado.toFixed(2)+'</b> / S/ '+META_GOAL.toFixed(2)+' — <b>'+pctH+'%</b></div>';
-        html+='<div style="background:#e5e7eb;border-radius:20px;height:6px;margin-top:6px;overflow:hidden;">';
-        html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
-        html+='</div>';
+        totalPagadoGeneral += pagado;
+        totalGoalGeneral   += res.goal;
+        html += buildAgentBlock(res.hoja, res.items, res.goal);
       });
       if(listaEl) listaEl.innerHTML=html;
-      var pctTotal = Math.min(100,Math.round(totalPagado/(META_GOAL*todasHojas.length)*100));
-      actualizarHeaderMeta(totalPagado, META_GOAL*todasHojas.length, pctTotal);
+      var pctTotal = totalGoalGeneral>0?Math.min(100,Math.round(totalPagadoGeneral/totalGoalGeneral*100)):0;
+      actualizarHeaderMeta(totalPagadoGeneral, totalGoalGeneral, pctTotal);
+
+      // Si además es agente (PEDRO), agrega su sección propia destacada arriba
+      if(esAgente){
+        var hojaPropia = META_EMAIL_HOJA[email];
+        var resPropio = resultados.find(function(r){ return r.hoja===hojaPropia; });
+        if(resPropio){
+          var pPropio = resPropio.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+          var pctP = Math.min(100,Math.round(pPropio/META_GOAL*100));
+          var mySection = '<div style="background:linear-gradient(135deg,#2f5597,#1e3a6e);border-radius:12px;padding:14px;margin-bottom:10px;color:white;">';
+          mySection += '<div style="font-size:13px;font-weight:800;margin-bottom:4px;">⭐ MI META ('+hojaPropia+'): '+pctP+'%</div>';
+          mySection += '<div style="font-size:12px;opacity:0.9;">S/ '+pPropio.toFixed(2)+' de S/ '+META_GOAL.toFixed(2)+'</div>';
+          mySection += '<div style="background:rgba(255,255,255,0.2);border-radius:20px;height:8px;margin-top:8px;overflow:hidden;">';
+          mySection += '<div style="background:white;width:'+pctP+'%;height:100%;border-radius:20px;"></div></div></div>';
+          if(listaEl) listaEl.innerHTML = mySection + listaEl.innerHTML;
+        }
+      }
     });
-  } else if(hoja){
+  } else if(esAgente){
+    // Agente normal: solo ve su hoja
+    var hoja = META_EMAIL_HOJA[email];
     fetch(getSheetCsvUrl(hoja)).then(function(r){ return r.text(); }).then(function(csv){
       if(loadingEl) loadingEl.style.display='none';
       var items = parseCsvMeta(csv);
@@ -1831,7 +1893,63 @@ function loadMeta(){
   }
 }
 
-// Load meta when app opens
+function descargarReporteTotalPDF(){
+  if(Object.keys(_metaCache).length===0){ alert('Espera que carguen los datos primero.'); return; }
+  var fecha = new Date().toLocaleDateString('es-PE',{year:'numeric',month:'long',day:'numeric'});
+  var html = '<html><head><meta charset="UTF-8"><style>';
+  html += 'body{font-family:Arial,sans-serif;padding:24px;color:#1a1a2e;}';
+  html += 'h1{color:#2f5597;font-size:18px;margin-bottom:4px;}';
+  html += '.fecha{font-size:12px;color:#888;margin-bottom:20px;}';
+  html += '.agente{margin-bottom:18px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;}';
+  html += '.agente-header{background:#2f5597;color:white;padding:10px 14px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;}';
+  html += '.agente-body{padding:10px 14px;}';
+  html += 'table{width:100%;border-collapse:collapse;font-size:12px;}';
+  html += 'th{background:#f3f4f6;color:#444;padding:6px 8px;text-align:left;border-bottom:1px solid #ddd;}';
+  html += 'td{padding:6px 8px;border-bottom:1px solid #f0f0f0;}';
+  html += '.pagado{color:#065f46;font-weight:700;}';
+  html += '.pendiente{color:#991b1b;font-weight:700;}';
+  html += '.total-row{background:#f9fafb;font-weight:700;}';
+  html += '.resumen{background:#2f5597;color:white;border-radius:8px;padding:14px;margin-bottom:20px;}';
+  html += '</style></head><body>';
+  html += '<h1>REPORTE TOTAL DE META DE EMPADRONAMIENTO</h1>';
+  html += '<div class="fecha">Generado el '+fecha+'</div>';
+
+  var totalGenPagado=0, totalGenMeta=0;
+  var claves = Object.keys(_metaCache);
+  claves.forEach(function(hoja){
+    var res = _metaCache[hoja];
+    var goal = res.goal;
+    var pagado = res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+    var pct = Math.min(100,Math.round(pagado/goal*100));
+    totalGenPagado += pagado;
+    totalGenMeta   += goal;
+    html += '<div class="agente">';
+    html += '<div class="agente-header"><span>👤 '+hoja+'</span><span>'+pct+'% — S/ '+pagado.toFixed(2)+' / S/ '+goal.toFixed(2)+'</span></div>';
+    html += '<div class="agente-body">';
+    if(res.items.length===0){
+      html += '<p style="color:#888;font-size:12px;">Sin locales registrados.</p>';
+    } else {
+      html += '<table><tr><th>NOMBRE DE LOCAL</th><th>TARIFA</th><th>ESTADO</th></tr>';
+      res.items.forEach(function(item){
+        var p = item.estado==='PAGADO';
+        html += '<tr><td>'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</td>';
+        html += '<td>S/ '+item.tarifa.toFixed(2)+'</td>';
+        html += '<td class="'+(p?'pagado':'pendiente')+'">'+item.estado+'</td></tr>';
+      });
+      html += '<tr class="total-row"><td>TOTAL PAGADO</td><td>S/ '+pagado.toFixed(2)+'</td><td></td></tr>';
+      html += '</table>';
+    }
+    html += '</div></div>';
+  });
+
+  var pctGen = totalGenMeta>0?Math.min(100,Math.round(totalGenPagado/totalGenMeta*100)):0;
+  html += '<div class="resumen"><b>TOTAL GENERAL:</b> S/ '+totalGenPagado.toFixed(2)+' de S/ '+totalGenMeta.toFixed(2)+' — '+pctGen+'%</div>';
+  html += '</body></html>';
+
+  var w = window.open('','_blank');
+  if(w){ w.document.write(html); w.document.close(); w.print(); }
+}
+
 document.addEventListener('DOMContentLoaded', loadMeta);
 
 
@@ -2038,9 +2156,37 @@ function cargarReportesAdmin(){
     html += '</div>';
 
     lista.innerHTML = html;
+    // guardar datos para PDF
+    window._reporteAdminData = {fecha: fecha, html: html, totales:{emp:totalEmp,ef:totalEf,tr:totalTr,bye:totalBye,total:totalGlobal}};
   }).catch(function(e){
     lista.innerHTML = '<div class="no-reporte">Error: '+e.message+'</div>';
   });
+}
+
+function descargarReporteDiarioPDF(){
+  var fecha = document.getElementById('fechaAdmin').value;
+  if(!fecha){ alert('Selecciona una fecha primero.'); return; }
+  if(!window._reporteAdminData || window._reporteAdminData.fecha !== fecha){
+    alert('Primero haz clic en "Ver día" para cargar los datos.'); return;
+  }
+  var d = window._reporteAdminData;
+  var fechaLeg = new Date(fecha+'T12:00:00').toLocaleDateString('es-PE',{year:'numeric',month:'long',day:'numeric'});
+  var html = '<html><head><meta charset="UTF-8"><style>';
+  html += 'body{font-family:Arial,sans-serif;padding:24px;color:#1a1a2e;}';
+  html += 'h1{color:#2f5597;font-size:18px;}';
+  html += '.fecha{font-size:12px;color:#888;margin-bottom:20px;}';
+  html += '.reporte-card{border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:12px;}';
+  html += '.reporte-user{font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;}';
+  html += '.reporte-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f5f5f5;}';
+  html += '.reporte-label{color:#666;}';
+  html += '.reporte-val{font-weight:600;color:#1a1a2e;}';
+  html += '</style></head><body>';
+  html += '<h1>REPORTE DIARIO DE COBRANZA</h1>';
+  html += '<div class="fecha">Fecha: '+fechaLeg+'</div>';
+  html += d.html;
+  html += '</body></html>';
+  var w = window.open('','_blank');
+  if(w){ w.document.write(html); w.document.close(); w.print(); }
 }
 </script>
 
