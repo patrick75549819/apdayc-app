@@ -1744,9 +1744,9 @@ function parseCsvMeta(csv){
       else { cur+=line[c]; }
     }
     cols.push(cur);
-    var nombre=(cols[0]||'').trim().toUpperCase();
-    var tarifa=parseFloat((cols[1]||'').replace(',','.').trim())||0;
-    var estado=(cols[2]||'').trim().toUpperCase();
+    var nombre=(cols[0]||'').replace(/[^\w\s\.\-\/áéíóúÁÉÍÓÚñÑ]/g,'').trim().toUpperCase();
+    var tarifa=parseFloat((cols[1]||'').replace(/[^0-9\.\,]/g,'').replace(',','.').trim())||0;
+    var estado=(cols[2]||'').replace(/[^a-zA-Z]/g,'').trim().toUpperCase();
     if(nombre) items.push({nombre:nombre,tarifa:tarifa,estado:estado});
   }
   return items;
@@ -1796,14 +1796,18 @@ function buildAgentBlock(nombre, items, goal){
   html+='<div style="background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden;">';
   html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
   html+='<div style="margin-top:10px;">';
-  items.forEach(function(item){
-    var p=item.estado==='COBRADO';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">';
-    html+='<span style="color:#333;">'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</span>';
-    html+='<span style="display:flex;gap:6px;align-items:center;"><span style="color:#2f5597;font-weight:600;">S/ '+item.tarifa.toFixed(2)+'</span>';
-    html+='<span class="'+(p?'meta-badge-pag':'meta-badge-pen')+'" style="font-size:10px;">'+item.estado+'</span></span>';
-    html+='</div>';
-  });
+  if(items.length===0){
+    html+='<div style="font-size:12px;color:#aaa;text-align:center;padding:8px;">Sin locales registrados</div>';
+  } else {
+    items.forEach(function(item){
+      var p=item.estado==='COBRADO';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">';
+      html+='<span style="color:#333;flex:1;">'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</span>';
+      html+='<span style="display:flex;gap:6px;align-items:center;flex-shrink:0;"><span style="color:#2f5597;font-weight:600;">S/ '+item.tarifa.toFixed(2)+'</span>';
+      html+='<span class="'+(p?'meta-badge-pag':'meta-badge-pen')+'" style="font-size:10px;">'+(p?'COBRADO':'PENDIENTE')+'</span></span>';
+      html+='</div>';
+    });
+  }
   html+='</div></div>';
   return html;
 }
