@@ -417,13 +417,15 @@ select.form-input{cursor:pointer;}
   <div class="panel" id="panelMeta">
     <br>
     <div class="meta-header-card">
-      <div style="font-size:13px;opacity:0.8;margin-bottom:4px;">META DE EMPADRONAMIENTO</div>
+      <div style="font-size:13px;opacity:0.8;margin-bottom:4px;">EMPADRONAMIENTOS</div>
       <div class="meta-pct" id="metaPct">0%</div>
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
       <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">2,000.00</span></div>
     </div>
     <div id="metaBtnAdmin" style="display:none;margin-bottom:12px;">
-      <button onclick="descargarReporteTotalPDF()" style="width:100%;background:#1e3a6e;color:white;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:13px;cursor:pointer;">📥 Descargar Reporte Total PDF</button>
+      <div style="font-size:12px;font-weight:700;color:#2f5597;margin-bottom:8px;">VER AGENTE:</div>
+      <div id="metaBotonesAgentes" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <button onclick="descargarReporteTotalPDF()" style="width:100%;background:#1e3a6e;color:white;border:none;border-radius:10px;padding:10px;font-weight:700;font-size:12px;cursor:pointer;margin-top:6px;">📥 Descargar Reporte Total PDF</button>
     </div>
     <div id="metaLoadingMsg" style="text-align:center;color:#888;padding:20px;font-size:13px;">Cargando datos...</div>
     <div id="metaLista"></div>
@@ -1696,6 +1698,7 @@ document.addEventListener('keydown',function(e){
 var metaData = {goal: 2000, items: []};
 // Mapeo email → nombre de hoja en Google Sheets
 // Mapeo email → nombre de hoja en Google Sheets
+// ============ EMPADRONAMIENTOS ============
 var META_EMAIL_HOJA = {
   'ptorres@gciperu.com':   'PEDRO',
   'mherrera@gciperu.com':  'MARTIN',
@@ -1706,25 +1709,20 @@ var META_EMAIL_HOJA = {
   'rvasquez@gciperu.com':  'RONALD',
   'jhuaman@gciperu.com':   'JUAN'
 };
-// OFICINA es una hoja especial con meta propia
 var META_OFICINA_HOJA = 'OFICINA';
 var META_OFICINA_GOAL = 3000;
-
-// Admins: pueden ver todo + descargar reporte
 var META_ADMINS = [
-  'mfranco@gciperu.com',   // MAYRA
-  'jessicah@gciperu.com',  // JESSICA
-  'psara@gciperu.com',     // PATRICK
-  'ccabelloc@gciperu.com', // CHRISTIAN
-  'hsalazar@gciperu.com',  // HARRY
-  'ptorres@gciperu.com'    // PEDRO (admin + agente)
+  'mfranco@gciperu.com',
+  'jessicah@gciperu.com',
+  'psara@gciperu.com',
+  'ccabelloc@gciperu.com',
+  'hsalazar@gciperu.com',
+  'ptorres@gciperu.com'
 ];
-
 var META_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
 var META_GOAL = 2000;
-
-// Cache de datos para el PDF
 var _metaCache = {};
+var _metaAgenteSel = 'TODOS'; // filtro seleccionado
 
 function getSheetCsvUrl(sheetName){
   var encoded = encodeURIComponent(sheetName);
@@ -1739,17 +1737,17 @@ function parseCsvMeta(csv){
   for(var i=1;i<lines.length;i++){
     var line = lines[i].trim();
     if(!line) continue;
-    var cols = [], inQ=false, cur='';
+    var cols=[], inQ=false, cur='';
     for(var c=0;c<line.length;c++){
       if(line[c]==='"'){ inQ=!inQ; }
       else if(line[c]===','&&!inQ){ cols.push(cur); cur=''; }
       else { cur+=line[c]; }
     }
     cols.push(cur);
-    var nombre = (cols[0]||'').trim().toUpperCase();
-    var tarifa = parseFloat((cols[1]||'').replace(',','.').trim())||0;
-    var estado = (cols[2]||'').trim().toUpperCase();
-    if(nombre) items.push({nombre:nombre, tarifa:tarifa, estado:estado});
+    var nombre=(cols[0]||'').trim().toUpperCase();
+    var tarifa=parseFloat((cols[1]||'').replace(',','.').trim())||0;
+    var estado=(cols[2]||'').trim().toUpperCase();
+    if(nombre) items.push({nombre:nombre,tarifa:tarifa,estado:estado});
   }
   return items;
 }
@@ -1764,7 +1762,7 @@ function renderMetaItems(items, containerEl){
   });
   var html='';
   sorted.forEach(function(item){
-    var pagado = item.estado==='PAGADO';
+    var pagado=item.estado==='PAGADO';
     html+='<div class="meta-item">';
     html+='<div class="meta-item-info">';
     html+='<div class="meta-item-nombre">'+(pagado?'<s>':'')+item.nombre+(pagado?'</s>':'')+'</div>';
@@ -1778,29 +1776,28 @@ function renderMetaItems(items, containerEl){
 }
 
 function actualizarHeaderMeta(suma, goal, pct){
-  document.getElementById('metaPct').innerText  = pct+'%';
-  document.getElementById('metaFill').style.width = pct+'%';
-  document.getElementById('metaSum').innerText  = suma.toFixed(2);
-  document.getElementById('metaGoal').innerText = goal.toFixed(2);
-  document.getElementById('homeMetaPct').innerText  = pct+'%';
-  document.getElementById('homeMetaFill').style.width = pct+'%';
-  document.getElementById('homeMetaSum').innerText  = suma.toFixed(2);
-  document.getElementById('homeMetaGoal').innerText = goal.toFixed(2);
+  document.getElementById('metaPct').innerText=pct+'%';
+  document.getElementById('metaFill').style.width=pct+'%';
+  document.getElementById('metaSum').innerText=suma.toFixed(2);
+  document.getElementById('metaGoal').innerText=goal.toFixed(2);
+  document.getElementById('homeMetaPct').innerText=pct+'%';
+  document.getElementById('homeMetaFill').style.width=pct+'%';
+  document.getElementById('homeMetaSum').innerText=suma.toFixed(2);
+  document.getElementById('homeMetaGoal').innerText=goal.toFixed(2);
 }
 
 function buildAgentBlock(nombre, items, goal){
-  var pagado = items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-  var pctH = Math.min(100,Math.round(pagado/goal*100));
+  var pagado=items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+  var pctH=Math.min(100,Math.round(pagado/goal*100));
   var html='';
   html+='<div style="background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">';
   html+='<div style="font-size:13px;font-weight:800;color:#2f5597;margin-bottom:4px;">👤 '+nombre+' <span style="font-size:11px;font-weight:600;color:#666;">('+pctH+'%)</span></div>';
-  html+='<div style="font-size:12px;color:#444;margin-bottom:6px;">S/ '+pagado.toFixed(2)+' pagado de S/ '+goal.toFixed(2)+'</div>';
+  html+='<div style="font-size:12px;color:#444;margin-bottom:6px;">S/ '+pagado.toFixed(2)+' de S/ '+goal.toFixed(2)+'</div>';
   html+='<div style="background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden;">';
   html+='<div style="background:#2f5597;width:'+pctH+'%;height:100%;border-radius:20px;"></div></div>';
-  // Detalle de locales
   html+='<div style="margin-top:10px;">';
   items.forEach(function(item){
-    var p = item.estado==='PAGADO';
+    var p=item.estado==='PAGADO';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:12px;">';
     html+='<span style="color:#333;">'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</span>';
     html+='<span style="display:flex;gap:6px;align-items:center;"><span style="color:#2f5597;font-weight:600;">S/ '+item.tarifa.toFixed(2)+'</span>';
@@ -1811,32 +1808,83 @@ function buildAgentBlock(nombre, items, goal){
   return html;
 }
 
-function loadMeta(){
-  var email = '';
-  try{ email = firebase.auth().currentUser ? firebase.auth().currentUser.email : ''; }catch(e){}
-  if(!email){ setTimeout(loadMeta, 800); return; }
+function metaRenderAdmin(agenteSel){
+  _metaAgenteSel = agenteSel || 'TODOS';
+  var listaEl = document.getElementById('metaLista');
+  if(!listaEl) return;
+  var claves = Object.keys(_metaCache);
+  if(claves.length===0){ listaEl.innerHTML='<div class="meta-empty">Cargando...</div>'; return; }
 
-  var loadingEl = document.getElementById('metaLoadingMsg');
-  var listaEl   = document.getElementById('metaLista');
-  var btnAdmin  = document.getElementById('metaBtnAdmin');
+  // Actualizar estilo de botones
+  var btns = document.getElementById('metaBotonesAgentes');
+  if(btns){
+    Array.from(btns.children).forEach(function(b){
+      var isActive = b.getAttribute('data-nombre') === _metaAgenteSel;
+      b.style.background = isActive ? '#2f5597' : '#e5e7eb';
+      b.style.color = isActive ? 'white' : '#333';
+    });
+  }
+
+  if(_metaAgenteSel === 'TODOS'){
+    var html='', totalP=0, totalG=0;
+    claves.forEach(function(hoja){
+      var res=_metaCache[hoja];
+      totalP+=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+      totalG+=res.goal;
+      html+=buildAgentBlock(hoja, res.items, res.goal);
+    });
+    listaEl.innerHTML=html;
+    var pct=totalG>0?Math.min(100,Math.round(totalP/totalG*100)):0;
+    actualizarHeaderMeta(totalP, totalG, pct);
+  } else {
+    var res=_metaCache[_metaAgenteSel];
+    if(!res){ listaEl.innerHTML='<div class="meta-empty">Sin datos.</div>'; return; }
+    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+    var pct=Math.min(100,Math.round(pagado/res.goal*100));
+    actualizarHeaderMeta(pagado, res.goal, pct);
+    listaEl.innerHTML=buildAgentBlock(_metaAgenteSel, res.items, res.goal);
+  }
+}
+
+function loadMeta(){
+  var email='';
+  try{ email=firebase.auth().currentUser?firebase.auth().currentUser.email:''; }catch(e){}
+  if(!email){ setTimeout(loadMeta,800); return; }
+
+  var loadingEl=document.getElementById('metaLoadingMsg');
+  var listaEl=document.getElementById('metaLista');
+  var btnAdmin=document.getElementById('metaBtnAdmin');
   if(loadingEl) loadingEl.style.display='block';
   if(listaEl)   listaEl.innerHTML='';
 
-  var esAdmin = META_ADMINS.indexOf(email)>-1;
-  var esAgente = !!META_EMAIL_HOJA[email];
+  var esAdmin=META_ADMINS.indexOf(email)>-1;
+  var esAgente=!!META_EMAIL_HOJA[email];
 
-  if(esAdmin && btnAdmin) btnAdmin.style.display='block';
+  if(esAdmin && btnAdmin){
+    btnAdmin.style.display='block';
+    // Crear botones de agentes
+    var botonesEl=document.getElementById('metaBotonesAgentes');
+    if(botonesEl && botonesEl.children.length===0){
+      var nombresHojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
+      nombresHojas.push(META_OFICINA_HOJA);
+      nombresHojas.push('TODOS');
+      nombresHojas.forEach(function(nombre){
+        var btn=document.createElement('button');
+        btn.innerText=nombre;
+        btn.setAttribute('data-nombre', nombre);
+        btn.style.cssText='padding:6px 10px;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:#e5e7eb;color:#333;';
+        btn.onclick=function(){ metaRenderAdmin(nombre); };
+        botonesEl.appendChild(btn);
+      });
+    }
+  }
 
-  // Si es admin: carga todos los agentes + OFICINA
   if(esAdmin){
-    var agentes = Object.keys(META_EMAIL_HOJA).map(function(em){
-      return {email:em, hoja:META_EMAIL_HOJA[em]};
-    });
-    // Agregar OFICINA
-    var hojasFetch = agentes.map(function(a){
-      return fetch(getSheetCsvUrl(a.hoja)).then(function(r){ return r.text(); }).then(function(csv){
-        return {hoja:a.hoja, items:parseCsvMeta(csv), goal:META_GOAL};
-      }).catch(function(){ return {hoja:a.hoja, items:[], goal:META_GOAL}; });
+    var todasHojas=Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
+    var hojasFetch=todasHojas.map(function(h){
+      return fetch(getSheetCsvUrl(h)).then(function(r){ return r.text(); }).then(function(csv){
+        return {hoja:h, items:parseCsvMeta(csv), goal:META_GOAL};
+      }).catch(function(){ return {hoja:h, items:[], goal:META_GOAL}; });
     });
     hojasFetch.push(
       fetch(getSheetCsvUrl(META_OFICINA_HOJA)).then(function(r){ return r.text(); }).then(function(csv){
@@ -1845,48 +1893,27 @@ function loadMeta(){
     );
     Promise.all(hojasFetch).then(function(resultados){
       if(loadingEl) loadingEl.style.display='none';
-      _metaCache = {};
-      var html='';
-      var totalPagadoGeneral=0, totalGoalGeneral=0;
-      resultados.forEach(function(res){
-        _metaCache[res.hoja] = res;
-        var pagado = res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-        totalPagadoGeneral += pagado;
-        totalGoalGeneral   += res.goal;
-        html += buildAgentBlock(res.hoja, res.items, res.goal);
-      });
-      if(listaEl) listaEl.innerHTML=html;
-      var pctTotal = totalGoalGeneral>0?Math.min(100,Math.round(totalPagadoGeneral/totalGoalGeneral*100)):0;
-      actualizarHeaderMeta(totalPagadoGeneral, totalGoalGeneral, pctTotal);
-
-      // Si además es agente (PEDRO), agrega su sección propia destacada arriba
+      _metaCache={};
+      resultados.forEach(function(res){ _metaCache[res.hoja]=res; });
+      // Si Pedro es admin+agente, mostrar su hoja primero
       if(esAgente){
-        var hojaPropia = META_EMAIL_HOJA[email];
-        var resPropio = resultados.find(function(r){ return r.hoja===hojaPropia; });
-        if(resPropio){
-          var pPropio = resPropio.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-          var pctP = Math.min(100,Math.round(pPropio/META_GOAL*100));
-          var mySection = '<div style="background:linear-gradient(135deg,#2f5597,#1e3a6e);border-radius:12px;padding:14px;margin-bottom:10px;color:white;">';
-          mySection += '<div style="font-size:13px;font-weight:800;margin-bottom:4px;">⭐ MI META ('+hojaPropia+'): '+pctP+'%</div>';
-          mySection += '<div style="font-size:12px;opacity:0.9;">S/ '+pPropio.toFixed(2)+' de S/ '+META_GOAL.toFixed(2)+'</div>';
-          mySection += '<div style="background:rgba(255,255,255,0.2);border-radius:20px;height:8px;margin-top:8px;overflow:hidden;">';
-          mySection += '<div style="background:white;width:'+pctP+'%;height:100%;border-radius:20px;"></div></div></div>';
-          if(listaEl) listaEl.innerHTML = mySection + listaEl.innerHTML;
-        }
+        var hojaPropia=META_EMAIL_HOJA[email];
+        metaRenderAdmin(hojaPropia);
+      } else {
+        metaRenderAdmin('TODOS');
       }
     });
   } else if(esAgente){
-    // Agente normal: solo ve su hoja
-    var hoja = META_EMAIL_HOJA[email];
+    var hoja=META_EMAIL_HOJA[email];
     fetch(getSheetCsvUrl(hoja)).then(function(r){ return r.text(); }).then(function(csv){
       if(loadingEl) loadingEl.style.display='none';
-      var items = parseCsvMeta(csv);
-      var pagado = items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-      var pct = Math.min(100,Math.round(pagado/META_GOAL*100));
+      var items=parseCsvMeta(csv);
+      var pagado=items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+      var pct=Math.min(100,Math.round(pagado/META_GOAL*100));
       actualizarHeaderMeta(pagado, META_GOAL, pct);
       renderMetaItems(items, listaEl);
     }).catch(function(){
-      if(loadingEl) loadingEl.innerText='Error al cargar datos. Intenta de nuevo.';
+      if(loadingEl) loadingEl.innerText='Error al cargar datos.';
     });
   } else {
     if(loadingEl) loadingEl.innerText='No tienes una hoja asignada.';
@@ -1894,63 +1921,84 @@ function loadMeta(){
 }
 
 function descargarReporteTotalPDF(){
-  if(Object.keys(_metaCache).length===0){ alert('Espera que carguen los datos primero.'); return; }
-  var fecha = new Date().toLocaleDateString('es-PE',{year:'numeric',month:'long',day:'numeric'});
-  var html = '<html><head><meta charset="UTF-8"><style>';
-  html += 'body{font-family:Arial,sans-serif;padding:24px;color:#1a1a2e;}';
-  html += 'h1{color:#2f5597;font-size:18px;margin-bottom:4px;}';
-  html += '.fecha{font-size:12px;color:#888;margin-bottom:20px;}';
-  html += '.agente{margin-bottom:18px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;}';
-  html += '.agente-header{background:#2f5597;color:white;padding:10px 14px;font-size:13px;font-weight:700;display:flex;justify-content:space-between;}';
-  html += '.agente-body{padding:10px 14px;}';
-  html += 'table{width:100%;border-collapse:collapse;font-size:12px;}';
-  html += 'th{background:#f3f4f6;color:#444;padding:6px 8px;text-align:left;border-bottom:1px solid #ddd;}';
-  html += 'td{padding:6px 8px;border-bottom:1px solid #f0f0f0;}';
-  html += '.pagado{color:#065f46;font-weight:700;}';
-  html += '.pendiente{color:#991b1b;font-weight:700;}';
-  html += '.total-row{background:#f9fafb;font-weight:700;}';
-  html += '.resumen{background:#2f5597;color:white;border-radius:8px;padding:14px;margin-bottom:20px;}';
-  html += '</style></head><body>';
-  html += '<h1>REPORTE TOTAL DE META DE EMPADRONAMIENTO</h1>';
-  html += '<div class="fecha">Generado el '+fecha+'</div>';
+  if(Object.keys(_metaCache).length===0){ alert('Espera que carguen los datos.'); return; }
+  var jsPDF=(window.jspdf&&window.jspdf.jsPDF)?window.jspdf.jsPDF:window.jsPDF;
+  var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var w=doc.internal.pageSize.getWidth();
+  var margin=14, y=18;
+  var azul=[47,85,151], negro=[30,30,30];
+  var fecha=new Date().toLocaleDateString('es-PE',{year:'numeric',month:'long',day:'numeric'});
 
-  var totalGenPagado=0, totalGenMeta=0;
-  var claves = Object.keys(_metaCache);
+  // Encabezado
+  doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
+  doc.text('REPORTE DE EMPADRONAMIENTOS', w/2, y, {align:'center'});
+  y+=7;
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150);
+  doc.text('Generado el '+fecha, w/2, y, {align:'center'});
+  y+=10;
+
+  var claves=Object.keys(_metaCache);
+  var totalGenP=0, totalGenG=0;
   claves.forEach(function(hoja){
-    var res = _metaCache[hoja];
-    var goal = res.goal;
-    var pagado = res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
-    var pct = Math.min(100,Math.round(pagado/goal*100));
-    totalGenPagado += pagado;
-    totalGenMeta   += goal;
-    html += '<div class="agente">';
-    html += '<div class="agente-header"><span>👤 '+hoja+'</span><span>'+pct+'% — S/ '+pagado.toFixed(2)+' / S/ '+goal.toFixed(2)+'</span></div>';
-    html += '<div class="agente-body">';
+    var res=_metaCache[hoja];
+    var goal=res.goal;
+    var pagado=res.items.reduce(function(s,x){ return s+(x.estado==='PAGADO'?x.tarifa:0); },0);
+    totalGenP+=pagado;
+    totalGenG+=goal;
+    var pct=Math.min(100,Math.round(pagado/goal*100));
+
+    if(y>260){ doc.addPage(); y=18; }
+
+    // Cabecera del agente
+    doc.setFillColor(...azul);
+    doc.roundedRect(margin, y-5, w-margin*2, 10, 2, 2, 'F');
+    doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+    doc.text('👤 '+hoja, margin+4, y);
+    doc.text(pct+'%  S/ '+pagado.toFixed(2)+'/'+goal.toFixed(2), w-margin-4, y, {align:'right'});
+    y+=8;
+
     if(res.items.length===0){
-      html += '<p style="color:#888;font-size:12px;">Sin locales registrados.</p>';
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(150,150,150);
+      doc.text('Sin locales registrados.', margin+4, y);
+      y+=6;
     } else {
-      html += '<table><tr><th>NOMBRE DE LOCAL</th><th>TARIFA</th><th>ESTADO</th></tr>';
+      // Tabla
+      var cols=[{x:margin,w:80,label:'LOCAL'},{x:margin+80,w:30,label:'TARIFA'},{x:margin+110,w:30,label:'ESTADO'}];
+      doc.setFillColor(230,235,245);
+      doc.rect(margin, y-4, w-margin*2, 7, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
+      cols.forEach(function(col){ doc.text(col.label, col.x+2, y); });
+      y+=5;
+      doc.setFont('helvetica','normal');
       res.items.forEach(function(item){
-        var p = item.estado==='PAGADO';
-        html += '<tr><td>'+(p?'<s>':'')+item.nombre+(p?'</s>':'')+'</td>';
-        html += '<td>S/ '+item.tarifa.toFixed(2)+'</td>';
-        html += '<td class="'+(p?'pagado':'pendiente')+'">'+item.estado+'</td></tr>';
+        if(y>270){ doc.addPage(); y=18; }
+        var pagado2=item.estado==='PAGADO';
+        doc.setTextColor(pagado2?100:negro[0], pagado2?100:negro[1], pagado2?100:negro[2]);
+        doc.setFontSize(7);
+        var nom=item.nombre.length>38?item.nombre.substring(0,35)+'...':item.nombre;
+        doc.text(nom, cols[0].x+2, y);
+        doc.text('S/ '+item.tarifa.toFixed(2), cols[1].x+2, y);
+        doc.setTextColor(pagado2?6:153, pagado2?95:27, pagado2?70:27);
+        doc.text(item.estado, cols[2].x+2, y);
+        y+=5;
       });
-      html += '<tr class="total-row"><td>TOTAL PAGADO</td><td>S/ '+pagado.toFixed(2)+'</td><td></td></tr>';
-      html += '</table>';
     }
-    html += '</div></div>';
+    y+=4;
   });
 
-  var pctGen = totalGenMeta>0?Math.min(100,Math.round(totalGenPagado/totalGenMeta*100)):0;
-  html += '<div class="resumen"><b>TOTAL GENERAL:</b> S/ '+totalGenPagado.toFixed(2)+' de S/ '+totalGenMeta.toFixed(2)+' — '+pctGen+'%</div>';
-  html += '</body></html>';
+  // Totales
+  if(y>255){ doc.addPage(); y=18; }
+  doc.setFillColor(...azul);
+  doc.roundedRect(margin, y-4, w-margin*2, 10, 2, 2, 'F');
+  doc.setFontSize(10); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+  var pctGen=totalGenG>0?Math.min(100,Math.round(totalGenP/totalGenG*100)):0;
+  doc.text('TOTAL GENERAL: S/ '+totalGenP.toFixed(2)+' de S/ '+totalGenG.toFixed(2)+' ('+pctGen+'%)', w/2, y+2, {align:'center'});
 
-  var w = window.open('','_blank');
-  if(w){ w.document.write(html); w.document.close(); w.print(); }
+  doc.save('reporte_empadronamientos_'+new Date().toISOString().slice(0,10)+'.pdf');
 }
 
 document.addEventListener('DOMContentLoaded', loadMeta);
+
 
 
 function verResumenMensual(){
