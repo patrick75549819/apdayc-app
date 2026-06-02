@@ -417,7 +417,10 @@ select.form-input{cursor:pointer;}
   <div class="panel" id="panelMeta">
     <br>
     <div class="meta-header-card">
-      <div style="font-size:13px;opacity:0.8;margin-bottom:4px;">EMPADRONAMIENTOS</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:13px;opacity:0.8;">EMPADRONAMIENTOS</div>
+        <button onclick="refrescarMeta()" id="btnRefrescarMeta" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:13px;padding:4px 10px;cursor:pointer;font-weight:700;">🔄 Actualizar</button>
+      </div>
       <div class="meta-pct" id="metaPct">0%</div>
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
       <div style="font-size:12px;opacity:0.8;">S/ <span id="metaSum">0.00</span> de S/ <span id="metaGoal">2,000.00</span></div>
@@ -1848,6 +1851,21 @@ function metaRenderAdmin(agenteSel){
     actualizarHeaderMeta(pagado, res.goal, pct);
     listaEl.innerHTML=buildAgentBlock(_metaAgenteSel, res.items, res.goal);
   }
+}
+
+function refrescarMeta(){
+  var btn = document.getElementById('btnRefrescarMeta');
+  if(btn){ btn.innerText='⏳ Cargando...'; btn.disabled=true; }
+  _metaCache = {};
+  var botonesEl = document.getElementById('metaBotonesAgentes');
+  if(botonesEl) botonesEl.innerHTML='';
+  setTimeout(function(){
+    loadMeta();
+    setTimeout(function(){
+      var btn2 = document.getElementById('btnRefrescarMeta');
+      if(btn2){ btn2.innerText='🔄 Actualizar'; btn2.disabled=false; }
+    }, 3000);
+  }, 100);
 }
 
 function loadMeta(){
