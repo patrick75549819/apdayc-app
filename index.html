@@ -1102,18 +1102,19 @@ doc.text('APDAYC — Sistema de cálculo de tarifas', margin, y);
 doc.text('GCI Servicios Financieros', w-margin, y, {align:'right'});
 const pdfBlob = doc.output('blob');
 const blobUrl = URL.createObjectURL(pdfBlob);
-const ventana = window.open(blobUrl, '_blank');
-if(!ventana){
-const div = document.getElementById('share-popup');
-if(div){ div.remove(); }
+// Eliminar popup anterior si existe
+const divAnterior = document.getElementById('share-popup');
+if(divAnterior){ divAnterior.remove(); }
+// Crear link de descarga que funciona en Android y iOS
 const popup = document.createElement('div');
 popup.id = 'share-popup';
-popup.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2f5597;color:white;padding:16px 24px;border-radius:12px;font-family:Arial;font-size:14px;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
-popup.innerHTML = '<p style="margin:0 0 10px;font-weight:bold;">Tu navegador bloqueó la apertura</p>' +
-'<a href="' + blobUrl + '" download="Tarifa_APDAYC.pdf" style="background:white;color:#2f5597;padding:8px 20px;border-radius:8px;text-decoration:none;font-weight:bold;">Descargar PDF</a>' +
-'<span onclick="this.parentElement.remove()" style="display:block;margin-top:10px;font-size:12px;cursor:pointer;opacity:0.8;">Cerrar</span>';
+popup.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2f5597;color:white;padding:16px 24px;border-radius:12px;font-family:Arial;font-size:14px;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:260px;';
+popup.innerHTML = '<p style="margin:0 0 12px;font-weight:bold;">📄 PDF Generado</p>' +
+'<a href="' + blobUrl + '" download="Tarifa_APDAYC.pdf" style="display:block;background:white;color:#2f5597;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;margin-bottom:8px;">⬇️ Descargar PDF</a>' +
+'<span onclick="this.parentElement.remove()" style="display:block;margin-top:8px;font-size:12px;cursor:pointer;opacity:0.8;">✕ Cerrar</span>';
 document.body.appendChild(popup);
-}
+// En desktop también intentar abrir en nueva pestaña
+try{ window.open(blobUrl, '_blank'); }catch(e){}
 }
 
 var CSV_RAW = [
@@ -1272,74 +1273,206 @@ function getBadge(status){
   return null;
 }
 
-async function buscarLicencia(){
-  var query = document.getElementById('busquedaInput').value.trim().toUpperCase();
-  var div = document.getElementById('resultadoConsulta');
-  if(!query){ div.innerHTML='<div class="no-result">Ingresa un ID de licencia o RUC</div>'; return; }
-  
-  div.innerHTML='<div class="loading">🔍 Buscando...</div>';
-  
+// URL del proxy L&RICS (actualizar si ngrok cambia)
+var LYRICS_PROXY_URL = null; // se carga desde Firestore
+
+async function cargarLyricsProxyURL(){
+  if(LYRICS_PROXY_URL) return LYRICS_PROXY_URL;
   try{
-    var allRows = [];
-    for(var u=0;u<CSV_RAW.length;u++){
-      var text = await fetchCSV(CSV_RAW[u]);
-      var rows = parseCSV(text);
-      allRows = allRows.concat(rows);
+    var db = firebase.firestore();
+    var doc = await db.collection('config').doc('lyrics_proxy').get();
+    if(doc.exists && doc.data().url){
+      LYRICS_PROXY_URL = doc.data().url.replace(/\/+$/, '');
+      return LYRICS_PROXY_URL;
     }
-    
-    // Filter by licencia or RUC
-    var found = allRows.filter(function(r){
-      var lic = String(r['Id Licencia']||'').trim();
-      var ruc = String(r['Ruc']||'').trim();
-      return lic===query || ruc===query || 
-             lic.toUpperCase()===query || ruc.toUpperCase()===query;
-    });
-    
-    if(found.length===0){
-      div.innerHTML='<div class="no-result">❌ No se encontraron resultados para <b>'+query+'</b></div>';
-      return;
+  }catch(e){ console.warn('No se pudo cargar URL proxy:', e); }
+  return null;
+}
+
+function esHorarioLyrics(){
+  var h = new Date().getHours();
+  var m = new Date().getMinutes();
+  // 9:00 AM a 7:00 PM
+  return (h >= 9 && h < 19) || (h === 19 && m === 0);
+}
+
+async function buscarEnLyrics(licencia, fechaIni, fechaFin){
+  var proxyUrl = await cargarLyricsProxyURL();
+  if(!proxyUrl) throw new Error('URL del proxy no configurada en Firestore');
+  var url = proxyUrl + '/buscar?licencia=' + encodeURIComponent(licencia) +
+            '&fecha_ini=' + encodeURIComponent(fechaIni) +
+            '&fecha_fin=' + encodeURIComponent(fechaFin);
+  var resp = await fetch(url, {
+    headers: {'ngrok-skip-browser-warning': 'true'}
+  });
+  if(!resp.ok) throw new Error('Error del proxy: ' + resp.status);
+  var data = await resp.json();
+  if(!data.ok) throw new Error(data.error || 'Error desconocido');
+  return data.resultado;
+}
+
+function renderResultadoLyrics(resultado, div){
+  if(!resultado){ div.innerHTML='<div class="no-result">❌ Sin resultados en L&RICS</div>'; return; }
+  var data = resultado.data;
+  var nombre = resultado.nombre_licencia || resultado.codigo_licencia;
+  var html = '<div class="resultado-local">';
+  html += '<div class="local-nombre">'+nombre+'</div>';
+  html += '<div class="local-info">Código: '+resultado.codigo_licencia+' | Período: '+resultado.fecha_ini+' al '+resultado.fecha_fin+'</div>';
+  html += '<div style="margin-top:8px;font-size:11px;color:#888;">📡 Fuente: L&RICS (tiempo real)</div>';
+
+  // Renderizar datos del estado de cuenta
+  if(data && typeof data === 'object'){
+    var items = data.Data || data.data || data.items || data.rows || [];
+    if(Array.isArray(items) && items.length > 0){
+      html += '<table style="width:100%;border-collapse:collapse;margin-top:10px;font-size:11px;">';
+      html += '<tr style="background:#2f5597;color:white;">';
+      html += '<th style="padding:5px;">Rubro</th><th>Nro</th><th>F.Emisión</th><th>F.Cancel.</th><th>Periodo</th><th>Importe</th><th>Estado</th>';
+      html += '</tr>';
+      var totalEmitido=0, totalPagado=0, totalPendiente=0;
+      items.forEach(function(item, idx){
+        var estado = (item.Estado||item.estado||'').toUpperCase();
+        var color = estado==='CANCELADO'?'#d1fae5': estado==='PENDIENTE'?'#fee2e2':'#fff';
+        var textColor = estado==='CANCELADO'?'#065f46': estado==='PENDIENTE'?'#991b1b':'#333';
+        var importe = parseFloat(item.Importe||item.importe||0);
+        totalEmitido += importe;
+        if(estado==='CANCELADO') totalPagado += importe;
+        else totalPendiente += importe;
+        html += '<tr style="background:'+(idx%2===0?'#f9fafb':color)+';">';
+        html += '<td style="padding:4px 5px;">'+(item.Rubro||item.rubro||'')+'</td>';
+        html += '<td style="padding:4px 5px;">'+(item.Numero||item.numero||'')+'</td>';
+        html += '<td style="padding:4px 5px;">'+(item.FechaEmision||item.f_emision||item.FEmision||'')+'</td>';
+        html += '<td style="padding:4px 5px;">'+(item.FechaCancelacion||item.f_cancelacion||item.FCancelacion||'')+'</td>';
+        html += '<td style="padding:4px 5px;">'+(item.Periodo||item.periodo||'')+'</td>';
+        html += '<td style="padding:4px 5px;font-weight:600;">S/ '+importe.toFixed(2)+'</td>';
+        html += '<td style="padding:4px 5px;color:'+textColor+';font-weight:700;">'+estado+'</td>';
+        html += '</tr>';
+      });
+      html += '<tr style="background:#2f5597;color:white;font-weight:700;">';
+      html += '<td colspan="5" style="padding:5px;">TOTALES</td>';
+      html += '<td style="padding:5px;">S/ '+totalEmitido.toFixed(2)+'</td><td></td></tr>';
+      html += '<tr style="background:#d1fae5;color:#065f46;font-weight:700;">';
+      html += '<td colspan="5" style="padding:4px 5px;">Total Pagado</td>';
+      html += '<td style="padding:4px 5px;">S/ '+totalPagado.toFixed(2)+'</td><td></td></tr>';
+      html += '<tr style="background:#fee2e2;color:#991b1b;font-weight:700;">';
+      html += '<td colspan="5" style="padding:4px 5px;">Total Pendiente</td>';
+      html += '<td style="padding:4px 5px;">S/ '+totalPendiente.toFixed(2)+'</td><td></td></tr>';
+      html += '</table>';
+    } else {
+      // Mostrar data cruda formateada si no hay items parseables
+      html += '<pre style="font-size:10px;background:#f9fafb;padding:8px;border-radius:8px;overflow:auto;max-height:300px;">'+JSON.stringify(data,null,2)+'</pre>';
     }
-    
-    // Group by licencia
-    var grupos = {};
-    found.forEach(function(r){
-      var key = r['Id Licencia']||r['Ruc'];
-      if(!grupos[key]) grupos[key]={info:r, meses:[]};
-      grupos[key].meses.push(r);
-    });
-    
-    var html='';
-    Object.keys(grupos).forEach(function(key){
-      var g=grupos[key];
-      var info=g.info;
-      html+='<div class="resultado-local">';
-      html+='<div class="local-nombre">'+(info['Establecimiento']||info['Nombre ó Razon Social']||'')+'</div>';
-      html+='<div class="local-info">RUC: '+(info['Ruc']||'—')+' | Licencia: '+(info['Id Licencia']||'—')+'<br>';
-      html+=(info['Distrito']||'')+(info['Dirección']?(' — '+info['Dirección']):'')+'</div>';
-      
-      // Sort by periodo
-      g.meses.sort(function(a,b){ return new Date(a['Periodo'])-new Date(b['Periodo']); });
-      
-      g.meses.forEach(function(m){
-        var badge=getBadge(m['Status de factura']);
-        if(!badge) return;
-        var periodo=formatPeriodo(m['Periodo']).toUpperCase();
-        var serie=String(m['Serie']||m['serie']||'').trim();
-        var numero=String(m['Numero']||m['numero']||m['Número']||'').trim();
-        var factura=serie&&numero?serie+'-'+numero:serie||numero?serie||numero:'';
-        html+='<div class="mes-item">';
-        html+='<div><div>'+periodo+'</div>'+(factura?'<div style="font-size:10px;color:#888;">Fact: '+factura+'</div>':'')+'</div>';
-        html+=badge;
+  }
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+async function buscarLicencia(){
+  var ahora = new Date();
+  var hora = ahora.getHours();
+  var div = document.getElementById('resultadoConsulta');
+  var query = document.getElementById('busquedaInput').value.trim().toUpperCase();
+  if(!query){ div.innerHTML='<div class="no-result">Ingresa el código de licencia</div>'; return; }
+
+  // Fuera de horario 9AM-7PM → mostrar mensaje de solo Sheets
+  if(hora < 9 || hora >= 19){
+    // Usar Google Sheets (sistema existente)
+    div.innerHTML='<div class="loading">🔍 Buscando en base de datos local...</div>';
+    var horaStr = ahora.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+    try{
+      var allRows = [];
+      for(var u=0;u<CSV_RAW.length;u++){
+        var text = await fetchCSV(CSV_RAW[u]);
+        var rows = parseCSV(text);
+        allRows = allRows.concat(rows);
+      }
+      var found = allRows.filter(function(r){
+        var lic = String(r['Id Licencia']||'').trim().toUpperCase();
+        return lic === query;
+      });
+      if(found.length===0){
+        div.innerHTML='<div class="no-result">❌ Licencia <b>'+query+'</b> no encontrada.<br><span style="font-size:11px;color:#888;">🕐 Fuera de horario L&RICS ('+horaStr+'). Consulta disponible 9:00 AM - 7:00 PM</span></div>';
+        return;
+      }
+      var grupos = {};
+      found.forEach(function(r){
+        var key = r['Id Licencia']||r['Ruc'];
+        if(!grupos[key]) grupos[key]={info:r, meses:[]};
+        grupos[key].meses.push(r);
+      });
+      var html='<div style="font-size:11px;color:#888;margin-bottom:8px;">📋 Fuente: Base de datos local | 🕐 Fuera de horario L&RICS</div>';
+      Object.keys(grupos).forEach(function(key){
+        var g=grupos[key]; var info=g.info;
+        html+='<div class="resultado-local">';
+        html+='<div class="local-nombre">'+(info['Establecimiento']||info['Nombre ó Razon Social']||'')+'</div>';
+        html+='<div class="local-info">RUC: '+(info['Ruc']||'—')+' | Licencia: '+(info['Id Licencia']||'—')+'</div>';
+        g.meses.sort(function(a,b){ return new Date(a['Periodo'])-new Date(b['Periodo']); });
+        g.meses.forEach(function(m){
+          var badge=getBadge(m['Status de factura']); if(!badge) return;
+          var periodo=formatPeriodo(m['Periodo']).toUpperCase();
+          var serie=String(m['Serie']||'').trim(); var numero=String(m['Numero']||m['Número']||'').trim();
+          var factura=serie&&numero?serie+'-'+numero:serie||numero||'';
+          html+='<div class="mes-item"><div><div>'+periodo+'</div>'+(factura?'<div style="font-size:10px;color:#888;">Fact: '+factura+'</div>':'')+'</div>'+badge+'</div>';
+        });
         html+='</div>';
       });
-      html+='</div>';
-    });
-    
-    div.innerHTML=html;
-    
+      div.innerHTML=html;
+    }catch(e){
+      div.innerHTML='<div class="no-result">❌ Error al cargar datos. Verifica tu conexión.</div>';
+    }
+    return;
+  }
+
+  // HORARIO 9AM-7PM → usar L&RICS via proxy
+  div.innerHTML='<div class="loading">🔍 Consultando L&RICS...</div>';
+
+  // Fechas por defecto: inicio del año hasta hoy
+  var hoy = ahora.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'}).replace(/\//g,'/');
+  var inicioAnio = '01/01/'+ahora.getFullYear();
+
+  try{
+    var resultado = await buscarEnLyrics(query, inicioAnio, hoy);
+    renderResultadoLyrics(resultado, div);
   }catch(e){
-    div.innerHTML='<div class="no-result">❌ Error al cargar datos. Verifica tu conexión.</div>';
-    console.error(e);
+    // Si el proxy falla, caer al Sheets
+    console.warn('Proxy L&RICS no disponible, usando Sheets:', e.message);
+    div.innerHTML='<div class="loading">⚠️ L&RICS no disponible, buscando en base local...</div>';
+    try{
+      var allRows2=[];
+      for(var u=0;u<CSV_RAW.length;u++){
+        var text2 = await fetchCSV(CSV_RAW[u]);
+        allRows2 = allRows2.concat(parseCSV(text2));
+      }
+      var found2 = allRows2.filter(function(r){
+        return String(r['Id Licencia']||'').trim().toUpperCase()===query;
+      });
+      if(found2.length===0){
+        div.innerHTML='<div class="no-result">❌ Licencia <b>'+query+'</b> no encontrada.<br><span style="font-size:11px;color:#e55;">⚠️ L&RICS sin conexión. Mostrando datos locales.</span></div>';
+        return;
+      }
+      var grupos2={};
+      found2.forEach(function(r){
+        var key=r['Id Licencia']||r['Ruc'];
+        if(!grupos2[key]) grupos2[key]={info:r,meses:[]};
+        grupos2[key].meses.push(r);
+      });
+      var html2='<div style="font-size:11px;color:#e55;margin-bottom:8px;">⚠️ L&RICS sin conexión — mostrando datos locales</div>';
+      Object.keys(grupos2).forEach(function(key){
+        var g=grupos2[key]; var info=g.info;
+        html2+='<div class="resultado-local">';
+        html2+='<div class="local-nombre">'+(info['Establecimiento']||info['Nombre ó Razon Social']||'')+'</div>';
+        html2+='<div class="local-info">RUC: '+(info['Ruc']||'—')+' | Licencia: '+(info['Id Licencia']||'—')+'</div>';
+        g.meses.sort(function(a,b){ return new Date(a['Periodo'])-new Date(b['Periodo']); });
+        g.meses.forEach(function(m){
+          var badge=getBadge(m['Status de factura']); if(!badge) return;
+          var periodo=formatPeriodo(m['Periodo']).toUpperCase();
+          html2+='<div class="mes-item"><div>'+periodo+'</div>'+badge+'</div>';
+        });
+        html2+='</div>';
+      });
+      div.innerHTML=html2;
+    }catch(e2){
+      div.innerHTML='<div class="no-result">❌ Error al cargar datos.</div>';
+    }
   }
 }
 
@@ -1466,76 +1599,6 @@ function getBadge(status){
   return null;
 }
 
-async function buscarLicencia(){
-  var query = document.getElementById('busquedaInput').value.trim().toUpperCase();
-  var div = document.getElementById('resultadoConsulta');
-  if(!query){ div.innerHTML='<div class="no-result">Ingresa un ID de licencia o RUC</div>'; return; }
-  
-  div.innerHTML='<div class="loading">🔍 Buscando...</div>';
-  
-  try{
-    var allRows = [];
-    for(var u=0;u<CSV_RAW.length;u++){
-      var text = await fetchCSV(CSV_RAW[u]);
-      var rows = parseCSV(text);
-      allRows = allRows.concat(rows);
-    }
-    
-    // Filter by licencia or RUC
-    var found = allRows.filter(function(r){
-      var lic = String(r['Id Licencia']||'').trim();
-      var ruc = String(r['Ruc']||'').trim();
-      return lic===query || ruc===query || 
-             lic.toUpperCase()===query || ruc.toUpperCase()===query;
-    });
-    
-    if(found.length===0){
-      div.innerHTML='<div class="no-result">❌ No se encontraron resultados para <b>'+query+'</b></div>';
-      return;
-    }
-    
-    // Group by licencia
-    var grupos = {};
-    found.forEach(function(r){
-      var key = r['Id Licencia']||r['Ruc'];
-      if(!grupos[key]) grupos[key]={info:r, meses:[]};
-      grupos[key].meses.push(r);
-    });
-    
-    var html='';
-    Object.keys(grupos).forEach(function(key){
-      var g=grupos[key];
-      var info=g.info;
-      html+='<div class="resultado-local">';
-      html+='<div class="local-nombre">'+(info['Establecimiento']||info['Nombre ó Razon Social']||'')+'</div>';
-      html+='<div class="local-info">RUC: '+(info['Ruc']||'—')+' | Licencia: '+(info['Id Licencia']||'—')+'<br>';
-      html+=(info['Distrito']||'')+(info['Dirección']?(' — '+info['Dirección']):'')+'</div>';
-      
-      // Sort by periodo
-      g.meses.sort(function(a,b){ return new Date(a['Periodo'])-new Date(b['Periodo']); });
-      
-      g.meses.forEach(function(m){
-        var badge=getBadge(m['Status de factura']);
-        if(!badge) return;
-        var periodo=formatPeriodo(m['Periodo']).toUpperCase();
-        var serie=String(m['Serie']||m['serie']||'').trim();
-        var numero=String(m['Numero']||m['numero']||m['Número']||'').trim();
-        var factura=serie&&numero?serie+'-'+numero:serie||numero?serie||numero:'';
-        html+='<div class="mes-item">';
-        html+='<div><div>'+periodo+'</div>'+(factura?'<div style="font-size:10px;color:#888;">Fact: '+factura+'</div>':'')+'</div>';
-        html+=badge;
-        html+='</div>';
-      });
-      html+='</div>';
-    });
-    
-    div.innerHTML=html;
-    
-  }catch(e){
-    div.innerHTML='<div class="no-result">❌ Error al cargar datos. Verifica tu conexión.</div>';
-    console.error(e);
-  }
-}
 
 // PWA Install
 var deferredPrompt;
