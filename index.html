@@ -2439,17 +2439,34 @@ var esCapacitor = (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatfor
 
 function actualizarPunto(lat, lng){
   var db = firebase.firestore();
-  rutaPuntos.push({lat: lat, lng: lng, t: new Date().toISOString()});
-  if(rutaPuntos.length % 5 === 0){
-    db.collection('jornadas').doc(jornadaId).update({
-      ruta: rutaPuntos,
-      lat: lat,
-      lng: lng
-    });
-  }
+  var punto = {lat: lat, lng: lng, t: new Date().toISOString()};
+  rutaPuntos.push(punto);
+  
+  // Guardar en Firestore en tiempo real (cada punto)
+  db.collection('jornadas').doc(jornadaId).update({
+    ruta: rutaPuntos,
+    lat: lat,
+    lng: lng,
+    ultimaPos: new Date().toISOString()
+  });
+  
+  // Actualizar mapa del empleado
   if(mapaEmpleado){
     var pos2 = {lat: lat, lng: lng};
     mapaEmpleado.setCenter(pos2);
+    // Actualizar marcador de posición actual
+    if(window._marcadorActual){
+      window._marcadorActual.setPosition(pos2);
+    } else {
+      window._marcadorActual = new google.maps.Marker({
+        position: pos2, map: mapaEmpleado,
+        title: 'Posición actual',
+        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 8,
+               fillColor: '#2f5597', fillOpacity: 1,
+               strokeColor: 'white', strokeWeight: 2}
+      });
+    }
+    // Trazar ruta
     if(polylineEmpleado) polylineEmpleado.setMap(null);
     polylineEmpleado = new google.maps.Polyline({
       path: rutaPuntos.map(function(r){ return {lat:r.lat, lng:r.lng}; }),
@@ -2466,7 +2483,7 @@ function iniciarGPSBackground(lat0, lng0){
       backgroundTitle: 'GPS Activo - APDAYC',
       requestPermissions: true,
       stale: false,
-      distanceFilter: 10
+      distanceFilter: 5
     }, function(location, error){
       if(error){
         if(error.code === 'NOT_AUTHORIZED'){
@@ -2484,7 +2501,7 @@ function iniciarGPSBackground(lat0, lng0){
     console.warn('Background GPS no disponible, usando watchPosition:', e);
     watchId = navigator.geolocation.watchPosition(function(p){
       actualizarPunto(p.coords.latitude, p.coords.longitude);
-    }, null, {enableHighAccuracy: true, maximumAge: 10000, timeout: 5000});
+    }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000, distanceFilter: 5});
   }
 }
 
@@ -2534,13 +2551,26 @@ function iniciarJornada(){
 
     timerInterval = setInterval(actualizarTimer, 1000);
 
+    // Marcador de INICIO en el mapa del empleado
+    if(mapaEmpleado){
+      window._marcadorInicio = new google.maps.Marker({
+        position: {lat: coords.latitude, lng: coords.longitude},
+        map: mapaEmpleado,
+        title: 'Inicio de jornada',
+        label: {text: '▶', color: 'white', fontSize: '12px'},
+        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
+               fillColor: '#16a34a', fillOpacity: 1,
+               strokeColor: 'white', strokeWeight: 2}
+      });
+    }
+
     // Iniciar GPS: background si es APK, watchPosition si es navegador
     if(esCapacitor){
       iniciarGPSBackground(coords.latitude, coords.longitude);
     } else {
       watchId = navigator.geolocation.watchPosition(function(p){
         actualizarPunto(p.coords.latitude, p.coords.longitude);
-      }, null, {enableHighAccuracy: true, maximumAge: 10000, timeout: 5000});
+      }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000, distanceFilter: 5});
     }
 
   }, function(){ msg.style.color='#dc2626'; msg.innerText='Error al obtener GPS. Activa la ubicación.'; });
@@ -2550,6 +2580,19 @@ function finalizarJornada(){
   if(!jornadaActiva) return;
   jornadaActiva = false;
   clearInterval(timerInterval);
+
+  // Agregar marcador de FIN en el mapa
+  if(mapaEmpleado && rutaPuntos.length > 0){
+    var ultimoPunto = rutaPuntos[rutaPuntos.length-1];
+    window._marcadorFin = new google.maps.Marker({
+      position: {lat: ultimoPunto.lat, lng: ultimoPunto.lng},
+      map: mapaEmpleado,
+      title: 'Fin de jornada',
+      icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
+             fillColor: '#dc2626', fillOpacity: 1,
+             strokeColor: 'white', strokeWeight: 2}
+    });
+  }
 
   // Detener GPS según plataforma
   if(esCapacitor && watchId){
@@ -2615,15 +2658,44 @@ function escucharEmpleados(){
         html+='<div class="emp-horas">Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
         html+='<button class="emp-ver-btn" onclick="verRutaEmpleado('+JSON.stringify(d.ruta)+','+d.lat+','+d.lng+')">Ver</button>';
         html+='</div>';
-        // Update map marker
+        // Update map marker y ruta en tiempo real
         if(mapaAdminMap && d.lat && d.lng){
+          var posActual = {lat:d.lat, lng:d.lng};
+          
+          // Marcador de posición actual (se mueve)
           if(marcadoresAdmin[d.email]){
-            marcadoresAdmin[d.email].setPosition({lat:d.lat, lng:d.lng});
+            marcadoresAdmin[d.email].setPosition(posActual);
           } else {
+            // Marcador de INICIO (verde)
+            if(d.ruta && d.ruta.length > 0){
+              new google.maps.Marker({
+                position: {lat:d.ruta[0].lat, lng:d.ruta[0].lng},
+                map: mapaAdminMap,
+                title: 'Inicio - '+d.nombre,
+                icon: {path: google.maps.SymbolPath.CIRCLE, scale: 8,
+                       fillColor: '#16a34a', fillOpacity: 1,
+                       strokeColor: 'white', strokeWeight: 2}
+              });
+            }
+            // Marcador posición actual (azul con inicial)
             marcadoresAdmin[d.email] = new google.maps.Marker({
-              position:{lat:d.lat,lng:d.lng}, map:mapaAdminMap,
-              title:d.nombre,
-              label:{text:d.nombre.charAt(0),color:'white'}
+              position: posActual, map: mapaAdminMap,
+              title: d.nombre,
+              label: {text: d.nombre.charAt(0), color: 'white', fontSize: '11px', fontWeight: 'bold'},
+              icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
+                     fillColor: '#2f5597', fillOpacity: 1,
+                     strokeColor: 'white', strokeWeight: 2}
+            });
+          }
+          
+          // Trazar ruta en tiempo real
+          if(d.ruta && d.ruta.length > 1){
+            if(!window._rutasAdmin) window._rutasAdmin = {};
+            if(window._rutasAdmin[d.email]) window._rutasAdmin[d.email].setMap(null);
+            window._rutasAdmin[d.email] = new google.maps.Polyline({
+              path: d.ruta.map(function(p){ return {lat:p.lat,lng:p.lng}; }),
+              strokeColor: '#2f5597', strokeWeight: 3,
+              strokeOpacity: 0.7, map: mapaAdminMap
             });
           }
         }
