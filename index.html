@@ -2652,9 +2652,18 @@ function escucharEmpleados(){
       var html='';
       snap.forEach(function(doc){
         var d=doc.data();
+        // Resolver nombre: usar USUARIOS si d.nombre está vacío o es '?'
+        var nombreMostrar = (d.nombre && d.nombre !== '?' && d.nombre.trim() !== '')
+          ? d.nombre
+          : (USUARIOS[String(d.email||'').toLowerCase()] || String(d.email||'').split('@')[0] || 'Agente');
+        // Si el nombre estaba vacío o ?, corregirlo en Firestore automáticamente
+        if(!d.nombre || d.nombre === '?' || d.nombre.trim() === ''){
+          firebase.firestore().collection('jornadas').doc(doc.id).update({nombre: nombreMostrar}).catch(function(){});
+        }
+        var inicial = nombreMostrar.charAt(0).toUpperCase() || '?';
         html+='<div class="empleado-card">';
         html+='<div class="emp-dot online"></div>';
-        html+='<div class="emp-info"><div class="emp-nombre">'+d.nombre+'</div>';
+        html+='<div class="emp-info"><div class="emp-nombre">'+nombreMostrar+'</div>';
         html+='<div class="emp-horas">Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
         html+='<button class="emp-ver-btn" onclick="verRutaEmpleado('+JSON.stringify(d.ruta)+','+d.lat+','+d.lng+')">Ver</button>';
         html+='</div>';
@@ -2671,7 +2680,7 @@ function escucharEmpleados(){
               new google.maps.Marker({
                 position: {lat:d.ruta[0].lat, lng:d.ruta[0].lng},
                 map: mapaAdminMap,
-                title: 'Inicio - '+d.nombre,
+                title: 'Inicio - '+nombreMostrar,
                 icon: {path: google.maps.SymbolPath.CIRCLE, scale: 8,
                        fillColor: '#16a34a', fillOpacity: 1,
                        strokeColor: 'white', strokeWeight: 2}
@@ -2680,8 +2689,8 @@ function escucharEmpleados(){
             // Marcador posición actual (azul con inicial)
             marcadoresAdmin[d.email] = new google.maps.Marker({
               position: posActual, map: mapaAdminMap,
-              title: d.nombre,
-              label: {text: d.nombre.charAt(0), color: 'white', fontSize: '11px', fontWeight: 'bold'},
+              title: nombreMostrar,
+              label: {text: inicial, color: 'white', fontSize: '11px', fontWeight: 'bold'},
               icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
                      fillColor: '#2f5597', fillOpacity: 1,
                      strokeColor: 'white', strokeWeight: 2}
