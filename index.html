@@ -1102,19 +1102,14 @@ doc.text('APDAYC — Sistema de cálculo de tarifas', margin, y);
 doc.text('GCI Servicios Financieros', w-margin, y, {align:'right'});
 const pdfBlob = doc.output('blob');
 const blobUrl = URL.createObjectURL(pdfBlob);
-// Eliminar popup anterior si existe
-const divAnterior = document.getElementById('share-popup');
-if(divAnterior){ divAnterior.remove(); }
-// Crear link de descarga que funciona en Android y iOS
-const popup = document.createElement('div');
-popup.id = 'share-popup';
-popup.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2f5597;color:white;padding:16px 24px;border-radius:12px;font-family:Arial;font-size:14px;text-align:center;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.3);min-width:260px;';
-popup.innerHTML = '<p style="margin:0 0 12px;font-weight:bold;">📄 PDF Generado</p>' +
-'<a href="' + blobUrl + '" download="Tarifa_APDAYC.pdf" style="display:block;background:white;color:#2f5597;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:bold;margin-bottom:8px;">⬇️ Descargar PDF</a>' +
-'<span onclick="this.parentElement.remove()" style="display:block;margin-top:8px;font-size:12px;cursor:pointer;opacity:0.8;">✕ Cerrar</span>';
-document.body.appendChild(popup);
-// En desktop también intentar abrir en nueva pestaña
-try{ window.open(blobUrl, '_blank'); }catch(e){}
+// Abrir PDF directo sin popup
+const a = document.createElement('a');
+a.href = blobUrl;
+a.target = '_blank';
+a.rel = 'noopener';
+document.body.appendChild(a);
+a.click();
+setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 1000);
 }
 
 var CSV_RAW = [
@@ -2792,14 +2787,44 @@ function verRutaHistorica(){
   mapaDiv.style.display = 'none';
 
   var db = firebase.firestore();
+  // Buscar por email y fecha (formato YYYY-MM-DD)
   db.collection('jornadas')
     .where('email','==',email)
-    .where('fecha','==',fecha)
     .get().then(function(snap){
       if(snap.empty){
-        infoEl.innerText = '⚠️ No hay jornadas registradas para ese agente en esa fecha.';
+        infoEl.innerText = '⚠️ No hay jornadas registradas para este agente.';
         return;
       }
+      
+      // Filtrar por fecha manualmente (por si el formato varía)
+      var snapFiltrado = [];
+      snap.forEach(function(doc){
+        var d = doc.data();
+        var docFecha = (d.fecha||'').trim();
+        var docInicio = (d.inicio||'').substring(0,10);
+        if(docFecha === fecha || docInicio === fecha){
+          snapFiltrado.push(d);
+        }
+      });
+      
+      if(snapFiltrado.length === 0){
+        // Mostrar fechas disponibles para ayudar al usuario
+        var fechasDisp = [];
+        snap.forEach(function(doc){
+          var f = (doc.data().fecha||doc.data().inicio||'').substring(0,10);
+          if(f && fechasDisp.indexOf(f)===-1) fechasDisp.push(f);
+        });
+        fechasDisp.sort().reverse();
+        infoEl.innerHTML = '⚠️ No hay jornadas para el <b>'+fecha+'</b>.<br>'+
+          (fechasDisp.length>0?'Fechas disponibles: <b>'+fechasDisp.slice(0,5).join(', ')+'</b>':'Sin jornadas registradas.');
+        return;
+      }
+      
+      // Crear objeto snap compatible
+      var snapCompat = { empty: false, forEach: function(cb){ snapFiltrado.forEach(function(d){ cb({data:function(){return d;}}); }); } };
+      var snap = snapCompat;
+      
+      if(true){
 
       // Tomar la jornada con más puntos de ruta
       var mejor = null;
@@ -2811,10 +2836,11 @@ function verRutaHistorica(){
       });
 
       var ruta = mejor.ruta || [];
-      if(ruta.length < 2){
-        infoEl.innerText = '⚠️ La jornada existe pero tiene muy pocos puntos de ruta ('+ruta.length+' puntos).';
+      if(ruta.length === 0){
+        infoEl.innerText = '⚠️ La jornada existe pero no tiene puntos de ruta guardados.';
         return;
       }
+      // Si solo hay 1 punto igual mostramos el mapa con el marcador
 
       // Mostrar mapa
       mapaDiv.style.display = 'block';
@@ -2837,13 +2863,15 @@ function verRutaHistorica(){
 
       // Dibujar ruta
       var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
-      window._histPolyline = new google.maps.Polyline({
-        path: path,
-        strokeColor: '#2f5597',
-        strokeWeight: 4,
-        strokeOpacity: 0.85,
-        map: mapaRutaHistMap
-      });
+      if(path.length >= 2){
+        window._histPolyline = new google.maps.Polyline({
+          path: path,
+          strokeColor: '#2f5597',
+          strokeWeight: 4,
+          strokeOpacity: 0.85,
+          map: mapaRutaHistMap
+        });
+      }
 
       // Marcador inicio (verde)
       window._histMarkerStart = new google.maps.Marker({
@@ -2869,6 +2897,7 @@ function verRutaHistorica(){
 
       // Info
       var nombre = mejor.nombre || email.split('@')[0];
+      } // cierre if(true)
       var inicio = mejor.inicio ? new Date(mejor.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '?';
       var fin = mejor.fin ? new Date(mejor.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : 'En curso';
       var dur = mejor.duracion || '';
