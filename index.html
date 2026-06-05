@@ -107,6 +107,76 @@ select.form-input{cursor:pointer;}
 .mic-sub{font-size:11px;color:#888;}
 .logout-btn{width:100%;padding:14px;background:#fee2e2;color:#dc2626;border:none;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px;}
 
+/* ===== MÓDULO COBROS ===== */
+.cobro-topbar{background:linear-gradient(135deg,#2f5597,#1e3a6e);border-radius:14px;padding:14px 16px;margin-bottom:14px;color:white;display:flex;justify-content:space-between;align-items:center;}
+.cobro-topbar-title{font-size:15px;font-weight:700;}
+.cobro-badge{background:rgba(255,255,255,0.25);color:white;border-radius:12px;font-size:11px;font-weight:700;padding:3px 10px;}
+.cobro-search-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.cobro-search-row{display:flex;gap:8px;margin-bottom:0;}
+.cobro-search-input{flex:1;padding:11px 12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-weight:600;color:#1a1a2e;outline:none;transition:border-color 0.2s;text-transform:uppercase;}
+.cobro-search-input:focus{border-color:#2f5597;}
+.cobro-btn-buscar{background:#2f5597;color:white;border:none;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.cobro-resultado-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);border-left:4px solid #2f5597;}
+.cobro-res-nombre{font-size:14px;font-weight:700;color:#1a1a2e;}
+.cobro-res-sub{font-size:12px;color:#666;margin-top:3px;}
+.cobro-res-tag{font-size:10px;background:#e8f0fe;color:#2f5597;border-radius:4px;padding:2px 7px;display:inline-block;margin-top:6px;font-weight:600;}
+.cobro-periodos-card{background:white;border-radius:12px;padding:0;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;}
+.cobro-periodo-header{padding:12px 14px 8px;font-size:12px;font-weight:700;color:#2f5597;border-bottom:1px solid #f0f0f0;}
+.cobro-periodo-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f5f5f5;cursor:pointer;transition:background 0.15s;}
+.cobro-periodo-row:last-child{border-bottom:none;}
+.cobro-periodo-row.seleccionable:hover{background:#f0f4ff;}
+.cobro-periodo-row.seleccionado{background:#e8f0fe;}
+.cobro-periodo-row.bloqueado{opacity:0.45;cursor:not-allowed;}
+.cobro-radio{width:20px;height:20px;border-radius:50%;border:2px solid #d1d5db;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.cobro-radio.checked{border-color:#2f5597;background:#2f5597;}
+.cobro-radio.checked::after{content:'';width:8px;height:8px;border-radius:50%;background:white;display:block;}
+.cobro-radio.disabled{border-color:#e5e7eb;background:#f9fafb;}
+.cobro-periodo-info{flex:1;}
+.cobro-periodo-nombre{font-size:13px;font-weight:600;color:#1a1a2e;}
+.cobro-periodo-fact{font-size:11px;color:#888;margin-top:1px;}
+.cobro-periodo-right{text-align:right;flex-shrink:0;}
+.cobro-badge-cobrado{font-size:10px;background:#d1fae5;color:#065f46;border-radius:4px;padding:2px 7px;font-weight:700;display:inline-block;}
+.cobro-badge-pendiente{font-size:10px;background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 7px;font-weight:700;display:inline-block;}
+.cobro-periodo-monto{font-size:12px;font-weight:700;color:#2f5597;margin-top:3px;}
+.cobro-periodo-lock{font-size:10px;color:#92400e;margin-top:2px;}
+.cobro-btn-agregar{width:100%;background:#e8f0fe;color:#2f5597;border:2px dashed #2f5597;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all 0.2s;}
+.cobro-btn-agregar:hover{background:#2f5597;color:white;}
+.cobro-carrito-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.cobro-carrito-titulo{font-size:13px;font-weight:700;color:#2f5597;margin-bottom:10px;}
+.cobro-item{display:flex;align-items:center;gap:10px;padding:9px 10px;background:#f8faff;border-radius:8px;margin-bottom:6px;border:1px solid #e8f0fe;}
+.cobro-item-info{flex:1;}
+.cobro-item-nombre{font-size:12px;font-weight:600;color:#1a1a2e;}
+.cobro-item-periodo{font-size:11px;color:#666;}
+.cobro-item-monto{font-size:13px;font-weight:700;color:#2f5597;flex-shrink:0;}
+.cobro-item-del{background:none;border:none;color:#dc2626;font-size:18px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1;}
+.cobro-total-bar{background:linear-gradient(135deg,#2f5597,#1e3a6e);border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.cobro-total-label{font-size:11px;color:rgba(255,255,255,0.8);}
+.cobro-total-monto{font-size:20px;font-weight:900;color:white;}
+.cobro-total-cant{font-size:11px;color:rgba(255,255,255,0.7);}
+.cobro-metodo-row{display:flex;gap:8px;margin-bottom:12px;}
+.cobro-metodo-btn{flex:1;border:2px solid #e5e7eb;border-radius:10px;padding:10px 6px;text-align:center;font-size:11px;font-weight:600;color:#666;cursor:pointer;transition:all 0.2s;}
+.cobro-metodo-btn.activo{border-color:#2f5597;background:#e8f0fe;color:#2f5597;}
+.cobro-foto-row{display:flex;gap:8px;margin-bottom:12px;}
+.cobro-foto-btn{flex:1;border:2px dashed #d1d5db;border-radius:10px;padding:12px 8px;text-align:center;font-size:12px;color:#888;cursor:pointer;background:#fafafa;transition:all 0.2s;}
+.cobro-foto-btn:active{background:#e8f0fe;border-color:#2f5597;color:#2f5597;}
+.cobro-foto-preview{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.cobro-foto-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:2px solid #e5e7eb;position:relative;}
+.cobro-btn-enviar{width:100%;background:linear-gradient(135deg,#16a34a,#15803d);color:white;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;}
+.cobro-btn-nueva{width:100%;background:#f0f4ff;color:#2f5597;border:2px solid #2f5597;border-radius:12px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;}
+.cobro-empty{text-align:center;color:#aaa;padding:20px;font-size:13px;}
+.cobro-duplicado-aviso{background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:none;}
+.cobro-duplicado-aviso .av-title{font-size:13px;font-weight:700;color:#92400e;}
+.cobro-duplicado-aviso .av-sub{font-size:11px;color:#b45309;margin-top:3px;}
+.cobro-secc-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+/* Mapa empleado propio */
+#mapaEmpleadoPropio{width:100%;height:260px;border-radius:12px;border:2px solid #e5e7eb;margin-bottom:10px;}
+/* Reportes cobros */
+.cobro-rep-card{background:white;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.cobro-rep-user{font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;}
+.cobro-rep-row{display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid #f5f5f5;}
+.cobro-rep-label{color:#666;}
+.cobro-rep-val{font-weight:600;color:#1a1a2e;}
+
 /* INSTALL BANNER */
 #installBanner{display:none;position:fixed;bottom:70px;left:0;width:100%;background:#2f5597;color:white;padding:12px 16px;z-index:9998;}
 #installBanner .banner-inner{display:flex;align-items:center;justify-content:space-between;max-width:380px;margin:0 auto;}
@@ -269,10 +339,17 @@ select.form-input{cursor:pointer;}
         <div class="qc-sub" style="position:relative;z-index:1;">Cobros y pendientes</div>
       </div>
     </div>
-    <div class="card">
-      <span class="card-icon">📋</span>
-      <div class="card-title">APDAYC - Tarifas</div>
-      <div class="card-sub">Calcula tarifas secundarias e indispensables para establecimientos registrados ante APDAYC.</div>
+    <div style="display:flex;gap:10px;margin-bottom:0;">
+      <div class="card" onclick="cambiarPanel('calculo')" style="flex:1;cursor:pointer;margin-bottom:0;text-align:center;padding:18px 10px;">
+        <span class="card-icon" style="font-size:26px;">📋</span>
+        <div class="card-title" style="font-size:14px;">Tarifas</div>
+        <div class="card-sub" style="font-size:11px;">Calcular tarifa APDAYC</div>
+      </div>
+      <div class="card" onclick="cambiarPanel('cobros')" style="flex:1;cursor:pointer;margin-bottom:0;text-align:center;padding:18px 10px;">
+        <span class="card-icon" style="font-size:26px;">💰</span>
+        <div class="card-title" style="font-size:14px;">Cobros</div>
+        <div class="card-sub" style="font-size:11px;">Registrar cobros</div>
+      </div>
     </div>
     <div class="card" style="background:linear-gradient(135deg,#2f5597,#1e3a6e);color:white;">
       <div style="font-size:13px;opacity:0.8;">GCI Servicios Financieros</div>
@@ -542,6 +619,12 @@ select.form-input{cursor:pointer;}
         <button class="btn-finalizar btn-disabled" id="btnFinalizar" onclick="finalizarJornada()" disabled>⏹ Finalizar Jornada</button>
       </div>
 
+      <div class="fichaje-card">
+        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">🗺️ Mi ruta del día</div>
+        <div id="mapaFichaje" style="width:100%;height:260px;border-radius:12px;border:2px solid #e5e7eb;"></div>
+      </div>
+
+      <div id="historialPropio"></div>
 
     </div>
 
@@ -595,6 +678,154 @@ select.form-input{cursor:pointer;}
   </div>
 
   </div></div><!-- fix unclosed divs -->
+
+
+  <!-- PANEL COBROS -->
+  <div class="panel" id="panelCobros">
+    <br>
+
+    <!-- VISTA AGENTE: REGISTRAR COBROS -->
+    <div id="cobrosAgente">
+      <!-- PASO 1: Buscar licencia -->
+      <div id="cobrosStep1">
+        <div class="cobro-topbar">
+          <div>
+            <div class="cobro-topbar-title">💰 Registro de Cobros</div>
+            <div style="font-size:11px;opacity:0.8;">Busca la licencia y selecciona el período</div>
+          </div>
+          <span class="cobro-badge" id="cobrosContador">0 items</span>
+        </div>
+
+        <div class="cobro-search-card">
+          <div class="cobro-secc-label">Número de licencia</div>
+          <div class="cobro-search-row">
+            <input class="cobro-search-input" id="cobrosLicInput" placeholder="Ej: 001-001234" maxlength="20" oninput="this.value=this.value.toUpperCase()">
+            <button class="cobro-btn-buscar" onclick="buscarLicenciaCobro()">Buscar</button>
+          </div>
+        </div>
+
+        <div class="cobro-duplicado-aviso" id="cobroDuplicadoAviso">
+          <div class="av-title">⚠️ Factura ya registrada en el sistema</div>
+          <div class="av-sub" id="cobroDuplicadoMsg">Esta factura ya fue subida al sistema por otro agente.</div>
+        </div>
+
+        <div id="cobrosResultado" style="display:none;">
+          <div class="cobro-resultado-card">
+            <div class="cobro-res-nombre" id="crNombre"></div>
+            <div class="cobro-res-sub" id="crSub"></div>
+            <span class="cobro-res-tag" id="crTag"></span>
+          </div>
+          <div class="cobro-periodos-card">
+            <div class="cobro-periodo-header">Períodos</div>
+            <div id="cobrosListaPeriodos"></div>
+          </div>
+          <button class="cobro-btn-agregar" id="cobrosBtnAgregar" onclick="agregarPeriodoCobro()" style="display:none;">
+            + Agregar al cobro
+          </button>
+        </div>
+
+        <div id="cobrosSearchMsg" class="cobro-empty"></div>
+
+        <div id="cobrosCarritoPreview" style="display:none;">
+          <div class="cobro-carrito-card">
+            <div class="cobro-carrito-titulo">📋 Cobros agregados (<span id="cobrosCarritoN">0</span>)</div>
+            <div id="cobrosCarritoListaPreview"></div>
+            <div class="cobro-total-bar" style="margin-top:8px;margin-bottom:0;">
+              <div>
+                <div class="cobro-total-label">Total cobrado</div>
+                <div class="cobro-total-monto" id="cobrosCarritoTotalPreview">S/ 0.00</div>
+              </div>
+              <button onclick="cobrosIrPaso2()" style="background:white;color:#2f5597;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;">Finalizar →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PASO 2: Confirmar y enviar -->
+      <div id="cobrosStep2" style="display:none;">
+        <div class="cobro-topbar">
+          <div>
+            <div class="cobro-topbar-title">💰 Confirmar Cobros</div>
+            <div style="font-size:11px;opacity:0.8;">Método y comprobante</div>
+          </div>
+          <button onclick="cobrosVolverPaso1()" style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;">← Volver</button>
+        </div>
+
+        <div class="cobro-carrito-card">
+          <div class="cobro-carrito-titulo">Detalle de cobros</div>
+          <div id="cobrosCarritoFinal"></div>
+          <div class="cobro-total-bar">
+            <div>
+              <div class="cobro-total-label">Total cobrado</div>
+              <div class="cobro-total-monto" id="cobrosTotal">S/ 0.00</div>
+            </div>
+            <div class="cobro-total-cant" id="cobrosTotalCant">0 licencias</div>
+          </div>
+        </div>
+
+        <div class="cobro-carrito-card">
+          <div class="cobro-secc-label">Método de pago</div>
+          <div class="cobro-metodo-row">
+            <div class="cobro-metodo-btn activo" id="metodoEfectivo" onclick="selMetodo('efectivo')">💵 Efectivo</div>
+            <div class="cobro-metodo-btn" id="metodoDeposito" onclick="selMetodo('deposito')">🏦 Dep. Efectivo</div>
+            <div class="cobro-metodo-btn" id="metodoTransferencia" onclick="selMetodo('transferencia')">📲 Transferencia</div>
+          </div>
+          <div class="cobro-secc-label">Adjuntar comprobante(s)</div>
+          <div class="cobro-foto-row">
+            <div class="cobro-foto-btn" onclick="document.getElementById('cobrosInputCamara').click()">📷 Cámara</div>
+            <div class="cobro-foto-btn" onclick="document.getElementById('cobrosInputGaleria').click()">🖼️ Galería</div>
+          </div>
+          <input type="file" id="cobrosInputCamara" accept="image/*" capture="environment" style="display:none" multiple onchange="agregarFotos(this.files)">
+          <input type="file" id="cobrosInputGaleria" accept="image/*" style="display:none" multiple onchange="agregarFotos(this.files)">
+          <div class="cobro-foto-preview" id="cobrosFotoPreview"></div>
+          <button class="cobro-btn-enviar" onclick="enviarCobros()">✅ Registrar cobros</button>
+          <button class="cobro-btn-nueva" onclick="cobrosVolverPaso1()">+ Agregar más licencias</button>
+          <div id="cobrosEnvioMsg" style="text-align:center;font-size:13px;margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VISTA ADMIN -->
+    <div id="cobrosAdmin" style="display:none;">
+      <div class="cobro-topbar">
+        <div>
+          <div class="cobro-topbar-title">📊 Gestión de Cobros</div>
+          <div style="font-size:11px;opacity:0.8;">Reportes y seguimiento</div>
+        </div>
+      </div>
+
+      <div class="cobro-carrito-card">
+        <div class="cobro-secc-label">Filtrar por fecha</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <div style="flex:1;">
+            <div style="font-size:10px;color:#888;margin-bottom:3px;">Desde</div>
+            <input type="date" id="cobrosAdminFechaDesde" style="width:100%;padding:9px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:#888;margin-bottom:3px;">Hasta</div>
+            <input type="date" id="cobrosAdminFechaHasta" style="width:100%;padding:9px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select id="cobrosAdminFiltroAgente" style="flex:1;padding:9px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;">
+            <option value="">Todos los agentes</option>
+          </select>
+          <button onclick="cargarCobrosAdmin()" style="background:#2f5597;color:white;border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;">🔍 Ver</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="descargarCobrosExcel()" style="flex:1;background:#16a34a;color:white;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">📥 Excel simple</button>
+          <button onclick="descargarCobrosDashboard()" style="flex:1;background:#2f5597;color:white;border:none;border-radius:10px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">📊 Con Dashboard</button>
+        </div>
+      </div>
+
+      <div id="cobrosAdminResumen"></div>
+      <div id="cobrosAdminLista">
+        <div class="cobro-empty">Selecciona fechas y presiona Ver</div>
+      </div>
+    </div>
+
+  </div>
+  <!-- FIN PANEL COBROS -->
 
   <!-- BOTTOM NAV -->
   <div class="bottom-nav">
@@ -1495,9 +1726,11 @@ function resetDispositivo(){
 
 
 function cambiarPanel(p){
-  ['home','calculo','consulta','meta','fichaje','reporte','perfil'].forEach(function(x){
-    document.getElementById('panel'+x.charAt(0).toUpperCase()+x.slice(1)).classList.remove('active');
-    document.getElementById('nav-'+x).classList.remove('active');
+  ['home','calculo','consulta','meta','fichaje','cobros','reporte','perfil'].forEach(function(x){
+    var panelEl = document.getElementById('panel'+x.charAt(0).toUpperCase()+x.slice(1));
+    var navEl = document.getElementById('nav-'+x);
+    if(panelEl) panelEl.classList.remove('active');
+    if(navEl) navEl.classList.remove('active');
   });
   document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1)).classList.add('active');
   document.getElementById('nav-'+p).classList.add('active');
@@ -1736,7 +1969,7 @@ function initFirebase(){
             var isAdmin = ADMINS.indexOf(user.email.toLowerCase())>-1;
             initReporte(user.email, isAdmin);
             initFichaje(user.email, isAdmin);
-            initFichaje(user.email, isAdmin);
+            initCobros(user.email, isAdmin);
           } else {
             auth.signOut();
             var err=document.getElementById('loginError');
@@ -1756,7 +1989,7 @@ function initFirebase(){
           var isAdmin2 = ADMINS.indexOf(user.email.toLowerCase())>-1;
           initReporte(user.email, isAdmin2);
           initFichaje(user.email, isAdmin2);
-          initFichaje(user.email, isAdmin2);
+          initCobros(user.email, isAdmin2);
         }
       });
     } else {
@@ -3269,6 +3502,635 @@ function cargarHistorialPropio(email){
     html+='</div>';
     lista.innerHTML=html;
   }).catch(function(){});
+}
+</script>
+
+
+<script>
+// ============================================================
+// MÓDULO DE COBROS - APDAYC
+// ============================================================
+var COBROS_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4'; // mismo sheets del proyecto
+var cobrosCarrito = [];        // items en carrito [{licencia, nombre, ruc, factura, periodo, monto, tipo}]
+var cobrosMetodoActual = 'efectivo';
+var cobrosLicenciaActual = null;  // datos del local buscado
+var cobrosPeriodosActual = [];    // períodos del local buscado
+var cobrosPeriodoSelIdx = -1;     // índice seleccionado
+var cobrosListenerActivo = null;  // listener Firestore para duplicados
+var cobrosImagenes = [];          // base64 de fotos adjuntas
+
+// --- Inicialización por rol ---
+function initCobros(email, isAdmin){
+  if(isAdmin){
+    document.getElementById('cobrosAdmin').style.display = 'block';
+    document.getElementById('cobrosAgente').style.display = 'block'; // admins también pueden registrar
+    // Llenar filtro de agentes
+    var sel = document.getElementById('cobrosAdminFiltroAgente');
+    Object.keys(USUARIOS).forEach(function(em){
+      var opt = document.createElement('option');
+      opt.value = em;
+      opt.text = USUARIOS[em];
+      sel.appendChild(opt);
+    });
+    // Fecha default hoy
+    var hoy = getTodayStr();
+    document.getElementById('cobrosAdminFechaDesde').value = hoy;
+    document.getElementById('cobrosAdminFechaHasta').value = hoy;
+  } else {
+    document.getElementById('cobrosAdmin').style.display = 'none';
+    document.getElementById('cobrosAgente').style.display = 'block';
+  }
+}
+
+// --- PASO 1: Buscar licencia en Google Sheets ---
+function buscarLicenciaCobro(){
+  var lic = document.getElementById('cobrosLicInput').value.trim().toUpperCase();
+  var msgEl = document.getElementById('cobrosSearchMsg');
+  var resEl = document.getElementById('cobrosResultado');
+  var dupEl = document.getElementById('cobroDuplicadoAviso');
+
+  if(!lic){ msgEl.innerText = 'Ingresa el número de licencia.'; return; }
+
+  msgEl.innerText = '🔍 Buscando...';
+  resEl.style.display = 'none';
+  dupEl.style.display = 'none';
+  document.getElementById('cobrosBtnAgregar').style.display = 'none';
+
+  // Buscar en ambas hojas de licencias (SURCO/SJL y LIMA/LINCE)
+  var SHEETS = [
+    { nombre: 'SURCO/SJL', url: 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/'+COBROS_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet=SURCO_SJL') },
+    { nombre: 'LIMA/LINCE', url: 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/'+COBROS_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet=LIMA_LINCE') }
+  ];
+
+  var encontrado = false;
+
+  function buscarEnSheet(idx){
+    if(idx >= SHEETS.length){
+      if(!encontrado){
+        // Fallback: buscar por Firestore (cobros registrados en la app)
+        buscarLicenciaEnFirestore(lic);
+      }
+      return;
+    }
+    fetch(SHEETS[idx].url)
+      .then(function(r){ return r.text(); })
+      .then(function(csv){
+        if(encontrado) return;
+        var filas = parseCSV(csv);
+        var fila = null;
+        for(var i=0;i<filas.length;i++){
+          var f = filas[i];
+          var licCol = f['Id Licencia']||f['Licencia']||f['N° Licencia']||f['Nro Licencia']||'';
+          if(licCol.toString().trim().toUpperCase() === lic){
+            fila = f; break;
+          }
+        }
+        if(fila){
+          encontrado = true;
+          procesarResultadoLicencia(lic, fila, SHEETS[idx].nombre);
+        } else {
+          buscarEnSheet(idx+1);
+        }
+      }).catch(function(){
+        buscarEnSheet(idx+1);
+      });
+  }
+
+  buscarEnSheet(0);
+}
+
+function buscarLicenciaEnFirestore(lic){
+  // Si no está en Sheets, no mostramos resultado — solo mensaje
+  document.getElementById('cobrosSearchMsg').innerText = '⚠️ Licencia no encontrada. Verifica el número.';
+}
+
+function procesarResultadoLicencia(lic, fila, hoja){
+  var msgEl = document.getElementById('cobrosSearchMsg');
+  var resEl = document.getElementById('cobrosResultado');
+  var dupEl = document.getElementById('cobroDuplicadoAviso');
+
+  // Extraer campos del Sheets
+  var nombre = fila['Nombre']||fila['Razon Social']||fila['Razón Social']||fila['Local']||'Sin nombre';
+  var ruc = fila['RUC']||fila['Ruc']||'';
+  var factura = fila['N° Factura']||fila['Factura']||fila['Nro Factura']||'';
+  var tipo = fila['Tipo']||fila['Giro']||'';
+  var monto = parseFloat((fila['Monto']||fila['Tarifa']||fila['Importe']||'0').toString().replace(/[^0-9.]/g,''))||0;
+  var estado = (fila['Estado']||'').toString().toUpperCase().trim();
+
+  // Construir períodos desde campos del Sheets
+  // Buscar todas las columnas que sean períodos
+  var periodos = [];
+  Object.keys(fila).forEach(function(col){
+    var c = col.trim().toUpperCase();
+    // Detectar columnas de período: ENE-25, FEB-25, etc o meses
+    var esPeriodo = /^(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)/.test(c) ||
+                    /^(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)/.test(c);
+    if(esPeriodo){
+      var val = (fila[col]||'').toString().toUpperCase().trim();
+      periodos.push({
+        periodo: col.trim(),
+        estado: val === 'COBRADA' || val === 'COBRADO' ? 'COBRADO' : 'PENDIENTE',
+        monto: monto,
+        factura: factura
+      });
+    }
+  });
+
+  // Si no hay columnas de período, crear uno genérico con el estado actual
+  if(periodos.length === 0){
+    periodos.push({
+      periodo: 'Factura '+factura,
+      estado: (estado === 'COBRADA' || estado === 'COBRADO') ? 'COBRADO' : 'PENDIENTE',
+      monto: monto,
+      factura: factura
+    });
+  }
+
+  cobrosLicenciaActual = {lic: lic, nombre: nombre, ruc: ruc, factura: factura, tipo: tipo, monto: monto, hoja: hoja};
+  cobrosPeriodosActual = periodos;
+  cobrosPeriodoSelIdx = -1;
+
+  // Verificar en Firestore si la factura ya fue registrada (tiempo real)
+  verificarDuplicadoTiempoReal(lic, factura, function(duplicado, agente){
+    if(duplicado){
+      dupEl.style.display = 'block';
+      document.getElementById('cobroDuplicadoMsg').innerText = '📋 La factura '+factura+' ya fue subida al sistema' + (agente ? ' por '+agente : '') + '. No se puede volver a registrar.';
+      document.getElementById('crNombre').innerText = nombre;
+      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · '+factura;
+      document.getElementById('crTag').innerText = tipo || hoja;
+      renderPeriodosCobro(periodos, true); // true = todo bloqueado
+      resEl.style.display = 'block';
+      msgEl.innerText = '';
+    } else {
+      dupEl.style.display = 'none';
+      document.getElementById('crNombre').innerText = nombre;
+      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · '+factura;
+      document.getElementById('crTag').innerText = tipo || hoja;
+      renderPeriodosCobro(periodos, false);
+      resEl.style.display = 'block';
+      msgEl.innerText = '';
+    }
+  });
+}
+
+function verificarDuplicadoTiempoReal(lic, factura, callback){
+  var db = firebase.firestore();
+  // Escuchar en tiempo real si la factura está en cobros_registros
+  if(cobrosListenerActivo){ cobrosListenerActivo(); cobrosListenerActivo = null; }
+  cobrosListenerActivo = db.collection('cobros_registros')
+    .where('factura','==',factura)
+    .onSnapshot(function(snap){
+      if(!snap.empty){
+        var d = snap.docs[0].data();
+        var agente = d.nombreAgente || d.emailAgente || '';
+        callback(true, agente);
+      } else {
+        callback(false, null);
+      }
+    });
+}
+
+function renderPeriodosCobro(periodos, todosBloqueados){
+  var container = document.getElementById('cobrosListaPeriodos');
+  var html = '';
+  var primerPendienteEncontrado = false;
+
+  periodos.forEach(function(p, idx){
+    var cobrado = p.estado === 'COBRADO';
+    var bloqueado = todosBloqueados || (!cobrado && primerPendienteEncontrado);
+
+    if(!cobrado && !primerPendienteEncontrado && !todosBloqueados){
+      primerPendienteEncontrado = true;
+      // Este es el primero seleccionable
+    }
+
+    var rowClass = 'cobro-periodo-row';
+    var radioClass = 'cobro-radio';
+
+    if(cobrado || todosBloqueados){
+      rowClass += ' bloqueado';
+      radioClass += ' disabled';
+    } else if(!bloqueado && !cobrado){
+      rowClass += ' seleccionable';
+    } else if(bloqueado){
+      rowClass += ' bloqueado';
+      radioClass += ' disabled';
+    }
+
+    var onclickAttr = (!cobrado && !bloqueado && !todosBloqueados)
+      ? 'onclick="seleccionarPeriodoCobro('+idx+')"'
+      : '';
+
+    html += '<div class="'+rowClass+'" id="cobro-row-'+idx+'" '+onclickAttr+'>';
+    html += '<div class="'+radioClass+'" id="cobro-radio-'+idx+'"></div>';
+    html += '<div class="cobro-periodo-info">';
+    html += '<div class="cobro-periodo-nombre">'+p.periodo+'</div>';
+    html += '<div class="cobro-periodo-fact">'+p.factura+'</div>';
+    html += '</div>';
+    html += '<div class="cobro-periodo-right">';
+    if(cobrado){
+      html += '<span class="cobro-badge-cobrado">Cobrado</span>';
+    } else if(todosBloqueados){
+      html += '<span class="cobro-badge-pendiente">Bloqueado</span>';
+    } else if(bloqueado){
+      html += '<span class="cobro-badge-pendiente">Pendiente</span>';
+      html += '<div class="cobro-periodo-lock">🔒 Pagar anterior primero</div>';
+    } else {
+      html += '<span class="cobro-badge-pendiente">Pendiente</span>';
+      if(p.monto > 0) html += '<div class="cobro-periodo-monto">S/ '+p.monto.toFixed(2)+'</div>';
+    }
+    html += '</div></div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function seleccionarPeriodoCobro(idx){
+  // Deseleccionar anterior
+  if(cobrosPeriodoSelIdx >= 0){
+    var prev = document.getElementById('cobro-radio-'+cobrosPeriodoSelIdx);
+    var prevRow = document.getElementById('cobro-row-'+cobrosPeriodoSelIdx);
+    if(prev){ prev.classList.remove('checked'); }
+    if(prevRow){ prevRow.classList.remove('seleccionado'); }
+  }
+  cobrosPeriodoSelIdx = idx;
+  var radio = document.getElementById('cobro-radio-'+idx);
+  var row = document.getElementById('cobro-row-'+idx);
+  if(radio){ radio.classList.add('checked'); }
+  if(row){ row.classList.add('seleccionado'); }
+
+  var p = cobrosPeriodosActual[idx];
+  var btnAg = document.getElementById('cobrosBtnAgregar');
+  btnAg.style.display = 'block';
+  btnAg.innerText = '+ Agregar '+p.periodo+' — S/ '+p.monto.toFixed(2)+' al cobro';
+}
+
+function agregarPeriodoCobro(){
+  if(cobrosPeriodoSelIdx < 0 || !cobrosLicenciaActual) return;
+  var p = cobrosPeriodosActual[cobrosPeriodoSelIdx];
+  // Verificar que no esté ya en carrito
+  for(var i=0;i<cobrosCarrito.length;i++){
+    if(cobrosCarrito[i].factura === p.factura && cobrosCarrito[i].periodo === p.periodo){
+      alert('Este período ya está en el carrito.'); return;
+    }
+  }
+  cobrosCarrito.push({
+    licencia: cobrosLicenciaActual.lic,
+    nombre: cobrosLicenciaActual.nombre,
+    ruc: cobrosLicenciaActual.ruc,
+    factura: p.factura,
+    periodo: p.periodo,
+    monto: p.monto,
+    tipo: cobrosLicenciaActual.tipo
+  });
+  actualizarCarritoPreview();
+  // Limpiar búsqueda para buscar otra
+  document.getElementById('cobrosLicInput').value = '';
+  document.getElementById('cobrosResultado').style.display = 'none';
+  document.getElementById('cobrosSearchMsg').innerText = '✅ Agregado. Busca otra licencia o finaliza el cobro.';
+  document.getElementById('cobrosBtnAgregar').style.display = 'none';
+  cobrosPeriodoSelIdx = -1;
+  cobrosLicenciaActual = null;
+  if(cobrosListenerActivo){ cobrosListenerActivo(); cobrosListenerActivo = null; }
+}
+
+function actualizarCarritoPreview(){
+  var n = cobrosCarrito.length;
+  document.getElementById('cobrosContador').innerText = n+' items';
+  document.getElementById('cobrosCarritoN').innerText = n;
+
+  if(n === 0){
+    document.getElementById('cobrosCarritoPreview').style.display = 'none';
+    return;
+  }
+  document.getElementById('cobrosCarritoPreview').style.display = 'block';
+
+  var total = cobrosCarrito.reduce(function(s,x){ return s+x.monto; }, 0);
+  document.getElementById('cobrosCarritoTotalPreview').innerText = 'S/ '+total.toFixed(2);
+
+  var html = '';
+  cobrosCarrito.forEach(function(item, i){
+    html += '<div class="cobro-item">';
+    html += '<div class="cobro-item-info"><div class="cobro-item-nombre">'+item.nombre+'</div>';
+    html += '<div class="cobro-item-periodo">'+item.factura+' · '+item.periodo+'</div></div>';
+    html += '<span class="cobro-item-monto">S/ '+item.monto.toFixed(2)+'</span>';
+    html += '<button class="cobro-item-del" onclick="eliminarItemCarrito('+i+')">×</button>';
+    html += '</div>';
+  });
+  document.getElementById('cobrosCarritoListaPreview').innerHTML = html;
+}
+
+function eliminarItemCarrito(idx){
+  cobrosCarrito.splice(idx, 1);
+  actualizarCarritoPreview();
+}
+
+function cobrosIrPaso2(){
+  if(cobrosCarrito.length === 0){ alert('Agrega al menos un cobro.'); return; }
+  document.getElementById('cobrosStep1').style.display = 'none';
+  document.getElementById('cobrosStep2').style.display = 'block';
+  renderCarritoFinal();
+  window.scrollTo(0,0);
+}
+
+function cobrosVolverPaso1(){
+  document.getElementById('cobrosStep1').style.display = 'block';
+  document.getElementById('cobrosStep2').style.display = 'none';
+  document.getElementById('cobrosEnvioMsg').innerText = '';
+}
+
+function renderCarritoFinal(){
+  var total = cobrosCarrito.reduce(function(s,x){ return s+x.monto; }, 0);
+  document.getElementById('cobrosTotal').innerText = 'S/ '+total.toFixed(2);
+  document.getElementById('cobrosTotalCant').innerText = cobrosCarrito.length+' licencia'+(cobrosCarrito.length!==1?'s':'');
+
+  var html = '';
+  cobrosCarrito.forEach(function(item, i){
+    html += '<div class="cobro-item">';
+    html += '<div class="cobro-item-info"><div class="cobro-item-nombre">'+item.nombre+'</div>';
+    html += '<div class="cobro-item-periodo">'+item.factura+' · '+item.periodo+'</div></div>';
+    html += '<span class="cobro-item-monto">S/ '+item.monto.toFixed(2)+'</span>';
+    html += '<button class="cobro-item-del" onclick="eliminarItemFinal('+i+')">×</button>';
+    html += '</div>';
+  });
+  document.getElementById('cobrosCarritoFinal').innerHTML = html;
+}
+
+function eliminarItemFinal(idx){
+  cobrosCarrito.splice(idx, 1);
+  if(cobrosCarrito.length === 0){ cobrosVolverPaso1(); return; }
+  actualizarCarritoPreview();
+  renderCarritoFinal();
+}
+
+function selMetodo(m){
+  cobrosMetodoActual = m;
+  ['efectivo','deposito','transferencia'].forEach(function(x){
+    document.getElementById('metodo'+x.charAt(0).toUpperCase()+x.slice(1)).classList.toggle('activo', x===m);
+  });
+}
+
+function agregarFotos(files){
+  Array.from(files).forEach(function(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      cobrosImagenes.push(e.target.result);
+      renderFotoPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderFotoPreview(){
+  var preview = document.getElementById('cobrosFotoPreview');
+  var html = '';
+  cobrosImagenes.forEach(function(img, i){
+    html += '<div style="position:relative;display:inline-block;">';
+    html += '<img src="'+img+'" class="cobro-foto-thumb">';
+    html += '<button onclick="eliminarFoto('+i+')" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px;">×</button>';
+    html += '</div>';
+  });
+  preview.innerHTML = html;
+}
+
+function eliminarFoto(idx){
+  cobrosImagenes.splice(idx, 1);
+  renderFotoPreview();
+}
+
+function enviarCobros(){
+  if(cobrosCarrito.length === 0){ alert('No hay cobros en el carrito.'); return; }
+  var msg = document.getElementById('cobrosEnvioMsg');
+  msg.style.color = '#2f5597';
+  msg.innerText = '⏳ Registrando cobros...';
+
+  var db = firebase.firestore();
+  var email = currentUserEmail;
+  var nombre = USUARIOS[email.toLowerCase()]||email.split('@')[0];
+  var fecha = getTodayStr();
+  var total = cobrosCarrito.reduce(function(s,x){ return s+x.monto; }, 0);
+  var timestamp = new Date().toISOString();
+
+  // Guardar cada cobro como documento individual en cobros_registros
+  var promesas = cobrosCarrito.map(function(item){
+    var docId = fecha+'_'+item.factura.replace(/[^a-zA-Z0-9]/g,'_')+'_'+item.periodo.replace(/[^a-zA-Z0-9]/g,'_');
+    return db.collection('cobros_registros').doc(docId).set({
+      licencia: item.licencia,
+      factura: item.factura,
+      periodo: item.periodo,
+      nombreLocal: item.nombre,
+      ruc: item.ruc,
+      tipo: item.tipo,
+      monto: item.monto,
+      metodo: cobrosMetodoActual,
+      emailAgente: email,
+      nombreAgente: nombre,
+      fecha: fecha,
+      timestamp: timestamp,
+      imagenes: cobrosImagenes
+    });
+  });
+
+  // Guardar resumen del lote
+  var loteId = 'lote_'+fecha+'_'+email.split('@')[0]+'_'+Date.now();
+  promesas.push(
+    db.collection('cobros_lotes').doc(loteId).set({
+      emailAgente: email,
+      nombreAgente: nombre,
+      fecha: fecha,
+      timestamp: timestamp,
+      metodo: cobrosMetodoActual,
+      items: cobrosCarrito,
+      totalMonto: total,
+      cantItems: cobrosCarrito.length,
+      imagenes: cobrosImagenes
+    })
+  );
+
+  Promise.all(promesas).then(function(){
+    msg.style.color = '#065f46';
+    msg.innerText = '✅ '+cobrosCarrito.length+' cobro(s) registrado(s) correctamente. Total: S/ '+total.toFixed(2);
+    // Limpiar todo
+    cobrosCarrito = [];
+    cobrosImagenes = [];
+    cobrosMetodoActual = 'efectivo';
+    actualizarCarritoPreview();
+    renderFotoPreview();
+    selMetodo('efectivo');
+    document.getElementById('cobrosCarritoFinal').innerHTML = '';
+    document.getElementById('cobrosTotal').innerText = 'S/ 0.00';
+    setTimeout(function(){
+      cobrosVolverPaso1();
+      msg.innerText = '';
+    }, 3000);
+  }).catch(function(e){
+    msg.style.color = '#dc2626';
+    msg.innerText = 'Error: '+e.message;
+  });
+}
+
+// ============================================================
+// ADMIN: CARGAR Y DESCARGAR REPORTES DE COBROS
+// ============================================================
+var _cobrosAdminData = [];
+
+function cargarCobrosAdmin(){
+  var desde = document.getElementById('cobrosAdminFechaDesde').value;
+  var hasta = document.getElementById('cobrosAdminFechaHasta').value;
+  var agenteF = document.getElementById('cobrosAdminFiltroAgente').value;
+  var lista = document.getElementById('cobrosAdminLista');
+  var resumen = document.getElementById('cobrosAdminResumen');
+
+  if(!desde||!hasta){ alert('Selecciona rango de fechas.'); return; }
+  lista.innerHTML = '<div class="cobro-empty">⏳ Cargando cobros...</div>';
+  resumen.innerHTML = '';
+
+  var db = firebase.firestore();
+  var query = db.collection('cobros_registros')
+    .where('fecha','>=',desde)
+    .where('fecha','<=',hasta);
+
+  query.get().then(function(snap){
+    if(snap.empty){ lista.innerHTML='<div class="cobro-empty">No hay cobros en ese período.</div>'; return; }
+
+    var items = [];
+    snap.forEach(function(doc){ items.push(doc.data()); });
+
+    // Filtrar por agente si aplica
+    if(agenteF){ items = items.filter(function(x){ return x.emailAgente === agenteF; }); }
+    items.sort(function(a,b){ return b.timestamp.localeCompare(a.timestamp); });
+
+    _cobrosAdminData = items;
+
+    // Resumen global
+    var totalGeneral = items.reduce(function(s,x){ return s+x.monto; }, 0);
+    var porAgente = {};
+    items.forEach(function(x){
+      if(!porAgente[x.nombreAgente]) porAgente[x.nombreAgente] = {total:0, cant:0};
+      porAgente[x.nombreAgente].total += x.monto;
+      porAgente[x.nombreAgente].cant += 1;
+    });
+
+    var resHtml = '<div class="cobro-carrito-card" style="border:2px solid #2f5597;">';
+    resHtml += '<div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📊 RESUMEN '+desde+' al '+hasta+'</div>';
+    resHtml += '<div class="cobro-rep-row"><span class="cobro-rep-label">Total cobros registrados</span><span class="cobro-rep-val">'+items.length+'</span></div>';
+    resHtml += '<div class="cobro-rep-row" style="font-size:15px;font-weight:700;"><span>TOTAL</span><span style="color:#2f5597;">S/ '+totalGeneral.toFixed(2)+'</span></div>';
+    resHtml += '<div style="margin-top:10px;">';
+    Object.keys(porAgente).sort().forEach(function(ag){
+      var pct = totalGeneral > 0 ? Math.round(porAgente[ag].total/totalGeneral*100) : 0;
+      resHtml += '<div style="margin-bottom:8px;">';
+      resHtml += '<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:3px;">';
+      resHtml += '<span>👤 '+ag+'</span><span>S/ '+porAgente[ag].total.toFixed(2)+' ('+pct+'%)</span></div>';
+      resHtml += '<div style="background:#e5e7eb;border-radius:20px;height:6px;overflow:hidden;">';
+      resHtml += '<div style="background:#2f5597;width:'+pct+'%;height:100%;border-radius:20px;"></div></div>';
+      resHtml += '</div>';
+    });
+    resHtml += '</div></div>';
+    resumen.innerHTML = resHtml;
+
+    // Lista detallada
+    var html = '';
+    items.forEach(function(x){
+      html += '<div class="cobro-rep-card">';
+      html += '<div class="cobro-rep-user">👤 '+x.nombreAgente+' <span style="font-size:10px;color:#aaa;">'+x.fecha+'</span></div>';
+      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Local</span><span class="cobro-rep-val">'+x.nombreLocal+'</span></div>';
+      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">RUC</span><span class="cobro-rep-val">'+x.ruc+'</span></div>';
+      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Factura</span><span class="cobro-rep-val">'+x.factura+'</span></div>';
+      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Período</span><span class="cobro-rep-val">'+x.periodo+'</span></div>';
+      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Método</span><span class="cobro-rep-val">'+x.metodo+'</span></div>';
+      html += '<div class="cobro-rep-row" style="font-weight:700;"><span class="cobro-rep-label">Monto</span><span style="color:#2f5597;">S/ '+x.monto.toFixed(2)+'</span></div>';
+      if(x.imagenes && x.imagenes.length>0){
+        html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
+        x.imagenes.forEach(function(img,i){
+          html += '<a href="'+img+'" target="_blank"><img src="'+img+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;"></a>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    lista.innerHTML = html || '<div class="cobro-empty">Sin resultados.</div>';
+
+  }).catch(function(e){
+    lista.innerHTML = '<div class="cobro-empty">Error: '+e.message+'</div>';
+  });
+}
+
+// --- Descargar Excel simple ---
+function descargarCobrosExcel(){
+  if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
+  var csv = 'Fecha,Agente,Local,RUC,Factura,Período,Tipo,Método,Monto\n';
+  _cobrosAdminData.forEach(function(x){
+    csv += [x.fecha, x.nombreAgente, '"'+(x.nombreLocal||'').replace(/"/g,"''")+'"', x.ruc, x.factura, x.periodo, x.tipo, x.metodo, x.monto.toFixed(2)].join(',')+'\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cobros_'+document.getElementById('cobrosAdminFechaDesde').value+'_al_'+document.getElementById('cobrosAdminFechaHasta').value+'.csv';
+  a.click();
+}
+
+// --- Descargar Excel con Dashboard HTML ---
+function descargarCobrosDashboard(){
+  if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
+  var desde = document.getElementById('cobrosAdminFechaDesde').value;
+  var hasta = document.getElementById('cobrosAdminFechaHasta').value;
+  var total = _cobrosAdminData.reduce(function(s,x){ return s+x.monto; },0);
+
+  var porAgente = {};
+  var porMetodo = {};
+  _cobrosAdminData.forEach(function(x){
+    if(!porAgente[x.nombreAgente]) porAgente[x.nombreAgente]={total:0,cant:0};
+    porAgente[x.nombreAgente].total += x.monto;
+    porAgente[x.nombreAgente].cant += 1;
+    if(!porMetodo[x.metodo]) porMetodo[x.metodo]={total:0,cant:0};
+    porMetodo[x.metodo].total += x.monto;
+    porMetodo[x.metodo].cant += 1;
+  });
+
+  var barrasAgentes = '';
+  Object.keys(porAgente).sort(function(a,b){ return porAgente[b].total-porAgente[a].total; }).forEach(function(ag){
+    var pct = total>0?Math.round(porAgente[ag].total/total*100):0;
+    barrasAgentes += '<div style="margin-bottom:12px;">';
+    barrasAgentes += '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px;">';
+    barrasAgentes += '<span>'+ag+'</span><span>S/ '+porAgente[ag].total.toFixed(2)+' ('+pct+'%)</span></div>';
+    barrasAgentes += '<div style="background:#e5e7eb;border-radius:10px;height:10px;">';
+    barrasAgentes += '<div style="background:#2f5597;width:'+pct+'%;height:100%;border-radius:10px;"></div></div>';
+    barrasAgentes += '</div>';
+  });
+
+  var filas = _cobrosAdminData.map(function(x){
+    return '<tr><td>'+x.fecha+'</td><td>'+x.nombreAgente+'</td><td>'+x.nombreLocal+'</td><td>'+x.ruc+'</td><td>'+x.factura+'</td><td>'+x.periodo+'</td><td>'+x.metodo+'</td><td><b>S/ '+x.monto.toFixed(2)+'</b></td></tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Cobros '+desde+' - '+hasta+'</title>';
+  html += '<style>body{font-family:Arial,sans-serif;padding:24px;color:#1a1a2e;}';
+  html += 'h1{color:#2f5597;margin-bottom:4px;} .sub{color:#888;font-size:13px;margin-bottom:24px;}';
+  html += '.kpi-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}';
+  html += '.kpi{background:#f0f4ff;border-radius:10px;padding:16px;flex:1;min-width:120px;border-left:4px solid #2f5597;}';
+  html += '.kpi-n{font-size:28px;font-weight:900;color:#2f5597;} .kpi-l{font-size:12px;color:#666;margin-top:4px;}';
+  html += '.section{background:white;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px;}';
+  html += '.section h2{font-size:15px;color:#2f5597;margin:0 0 16px;}';
+  html += 'table{width:100%;border-collapse:collapse;font-size:12px;} th{background:#2f5597;color:white;padding:8px;text-align:left;}';
+  html += 'td{padding:7px 8px;border-bottom:1px solid #f0f0f0;}  tr:hover{background:#f8faff;}';
+  html += '@media print{body{padding:12px;}}';
+  html += '</style></head><body>';
+  html += '<h1>📊 Reporte de Cobros — GCI Servicios Financieros</h1>';
+  html += '<div class="sub">Período: '+desde+' al '+hasta+' · Generado: '+new Date().toLocaleDateString('es-PE')+'</div>';
+  html += '<div class="kpi-row">';
+  html += '<div class="kpi"><div class="kpi-n">S/ '+total.toFixed(2)+'</div><div class="kpi-l">Total cobrado</div></div>';
+  html += '<div class="kpi"><div class="kpi-n">'+_cobrosAdminData.length+'</div><div class="kpi-l">Cobros registrados</div></div>';
+  html += '<div class="kpi"><div class="kpi-n">'+Object.keys(porAgente).length+'</div><div class="kpi-l">Agentes activos</div></div>';
+  html += '</div>';
+  html += '<div class="section"><h2>📈 Avance por Agente</h2>'+barrasAgentes+'</div>';
+  html += '<div class="section"><h2>📋 Detalle de Cobros</h2>';
+  html += '<table><thead><tr><th>Fecha</th><th>Agente</th><th>Local</th><th>RUC</th><th>Factura</th><th>Período</th><th>Método</th><th>Monto</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+  html += '</body></html>';
+
+  var blob = new Blob([html], {type:'text/html;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dashboard_cobros_'+desde+'_al_'+hasta+'.html';
+  a.click();
 }
 </script>
 
