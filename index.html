@@ -351,7 +351,7 @@ select.form-input{cursor:pointer;}
         <div class="card-sub" style="font-size:11px;">Registrar cobros</div>
       </div>
     </div>
-    <div class="card" style="background:linear-gradient(135deg,#2f5597,#1e3a6e);color:white;">
+    <div class="card" style="background:linear-gradient(135deg,#2f5597,#1e3a6e);color:white;margin-top:10px;">
       <div style="font-size:13px;opacity:0.8;">GCI Servicios Financieros</div>
       <div style="font-size:16px;font-weight:700;margin-top:4px;">Sistema de Gestión</div>
       <div style="font-size:12px;opacity:0.7;margin-top:6px;">Consulta licencias y verifica el estado de pagos en tiempo real</div>
@@ -682,10 +682,9 @@ select.form-input{cursor:pointer;}
 
   <!-- PANEL COBROS -->
   <div class="panel" id="panelCobros">
-    <br>
 
     <!-- VISTA AGENTE: REGISTRAR COBROS -->
-    <div id="cobrosAgente">
+    <div id="cobrosAgente" style="display:none;">
       <!-- PASO 1: Buscar licencia -->
       <div id="cobrosStep1">
         <div class="cobro-topbar">
@@ -699,7 +698,7 @@ select.form-input{cursor:pointer;}
         <div class="cobro-search-card">
           <div class="cobro-secc-label">Número de licencia</div>
           <div class="cobro-search-row">
-            <input class="cobro-search-input" id="cobrosLicInput" placeholder="Ej: 001-001234" maxlength="20" oninput="this.value=this.value.toUpperCase()">
+            <input class="cobro-search-input" id="cobrosLicInput" placeholder="Ingresa el número de licencia" maxlength="20" oninput="this.value=this.value.toUpperCase()">
             <button class="cobro-btn-buscar" onclick="buscarLicenciaCobro()">Buscar</button>
           </div>
         </div>
@@ -1331,16 +1330,7 @@ y += 5;
 doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,180);
 doc.text('APDAYC — Sistema de cálculo de tarifas', margin, y);
 doc.text('GCI Servicios Financieros', w-margin, y, {align:'right'});
-const pdfBlob = doc.output('blob');
-const blobUrl = URL.createObjectURL(pdfBlob);
-// Abrir PDF directo sin popup
-const a = document.createElement('a');
-a.href = blobUrl;
-a.target = '_blank';
-a.rel = 'noopener';
-document.body.appendChild(a);
-a.click();
-setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 1000);
+doc.save('Reporte_GCI_' + new Date().toISOString().slice(0,10) + '.pdf');
 }
 
 var CSV_RAW = [
@@ -1420,7 +1410,7 @@ function cerrarConsulta(){
 }
 
 function parseCSV(text){
-  var lines = text.split('\n');
+  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   var headers = [];
   var rows = [];
   // Find header row (row with 'Id Licencia')
@@ -1732,8 +1722,10 @@ function cambiarPanel(p){
     if(panelEl) panelEl.classList.remove('active');
     if(navEl) navEl.classList.remove('active');
   });
-  document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1)).classList.add('active');
-  document.getElementById('nav-'+p).classList.add('active');
+  var targetPanel = document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1));
+  var targetNav = document.getElementById('nav-'+p);
+  if(targetPanel) targetPanel.classList.add('active');
+  if(targetNav) targetNav.classList.add('active');
   window.scrollTo(0,0);
 }
 
@@ -1909,9 +1901,9 @@ window.onload=function(){
 </script>
 
 <script>
-var ADMINS = ["psara@gciperu.com","ccabelloc@gciperu.com","ptorres@gciperu.com","jessicah@gciperu.com"];
+var ADMINS = ["psara@gciperu.com","ccabelloc@gciperu.com","ptorres@gciperu.com","jessicah@gciperu.com","herberta@gciperu.com","mfranco@gciperu.com"];
 var ADMINS_CON_RUTA = ["ptorres@gciperu.com"]; // Admins que tambien fichan
-var ADMINS_SIN_RUTA = ["psara@gciperu.com","ccabelloc@gciperu.com","jessicah@gciperu.com"]; // Solo ven mapa
+var ADMINS_SIN_RUTA = ["psara@gciperu.com","ccabelloc@gciperu.com","jessicah@gciperu.com","herberta@gciperu.com","mfranco@gciperu.com"]; // Solo ven mapa
 var USUARIOS = {"psara@gciperu.com": "Patrick", "ecalderon@gciperu.com": "Ernesto", "rvasquez@gciperu.com": "Ronald", "ptorres@gciperu.com": "Pedro", "rdiaz@gciperu.com": "Ruben", "mherrera@gciperu.com": "Martin", "jhuaman@gciperu.com": "Juan", "jleon@gciperu.com": "Jhony", "gynga@gciperu.com": "Gabriela", "hsalazar@gciperu.com": "Harry", "ccabelloc@gciperu.com": "Christian", "herberta@gciperu.com": "Herbert", "mfranco@gciperu.com": "Mayra", "rperez@gciperu.com": "Richard", "mangel@gciperu.com": "Miguel", "jessicah@gciperu.com": "Jessica"};
 var auth;
 function togglePass(){
@@ -2611,561 +2603,6 @@ function initFichaje(email, isAdmin){
         lista.innerHTML=html;
       });
   }
-  var hoy = new Date().toISOString().split('T')[0];
-  document.getElementById('fechaHistorial') && (document.getElementById('fechaHistorial').value = hoy);
-
-  if(isAdmin){
-    document.getElementById('fichajeEmpleado').style.display = 'block';
-    document.getElementById('fichajeAdmin').style.display = 'block';
-    initMapaAdmin();
-    escucharEmpleados();
-    cargarHistorialAdmin();
-  } else {
-    document.getElementById('fichajeEmpleado').style.display = 'block';
-    document.getElementById('fichajeAdmin').style.display = 'none';
-  }
-  initMapaEmpleado();
-  cargarHistorialPersonal(email);
-}
-
-function initMapaEmpleado(){
-  if(mapaEmpleado) return;
-  navigator.geolocation.getCurrentPosition(function(pos){
-    var centro = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-    mapaEmpleado = new google.maps.Map(document.getElementById('mapaFichaje'), {
-      center: centro, zoom: 15,
-      mapTypeControl: false, streetViewControl: false
-    });
-    new google.maps.Marker({position: centro, map: mapaEmpleado, title: 'Tú'});
-  }, function(){
-    mapaEmpleado = new google.maps.Map(document.getElementById('mapaFichaje'), {
-      center: {lat: -12.046374, lng: -77.042793}, zoom: 12,
-      mapTypeControl: false, streetViewControl: false
-    });
-  });
-}
-
-function limpiarNotificaciones(){
-  var db = firebase.firestore();
-  db.collection('notificaciones').where('leida','==',false).get().then(function(snap){
-    snap.forEach(function(doc){ doc.ref.update({leida:true}); });
-    document.getElementById('listaNotificaciones').innerHTML='<div class="no-reporte">Sin notificaciones</div>';
-  });
-}
-function initMapaAdmin(){
-  if(mapaAdminMap) return;
-  setTimeout(function(){
-    mapaAdminMap = new google.maps.Map(document.getElementById('mapaAdmin'), {
-      center: {lat: -12.046374, lng: -77.042793}, zoom: 12,
-      mapTypeControl: false, streetViewControl: false
-    });
-  }, 500);
-}
-
-// Detectar si corre en Capacitor (APK) o navegador
-var esCapacitor = (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-
-function actualizarPunto(lat, lng){
-  var db = firebase.firestore();
-  var punto = {lat: lat, lng: lng, t: new Date().toISOString()};
-  rutaPuntos.push(punto);
-  
-  // Guardar en Firestore en tiempo real (cada punto)
-  db.collection('jornadas').doc(jornadaId).update({
-    ruta: rutaPuntos,
-    lat: lat,
-    lng: lng,
-    ultimaPos: new Date().toISOString()
-  });
-  
-  // Actualizar mapa del empleado
-  if(mapaEmpleado){
-    var pos2 = {lat: lat, lng: lng};
-    mapaEmpleado.setCenter(pos2);
-    // Actualizar marcador de posición actual
-    if(window._marcadorActual){
-      window._marcadorActual.setPosition(pos2);
-    } else {
-      window._marcadorActual = new google.maps.Marker({
-        position: pos2, map: mapaEmpleado,
-        title: 'Posición actual',
-        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 8,
-               fillColor: '#2f5597', fillOpacity: 1,
-               strokeColor: 'white', strokeWeight: 2}
-      });
-    }
-    // Trazar ruta
-    if(polylineEmpleado) polylineEmpleado.setMap(null);
-    polylineEmpleado = new google.maps.Polyline({
-      path: rutaPuntos.map(function(r){ return {lat:r.lat, lng:r.lng}; }),
-      strokeColor: '#2f5597', strokeWeight: 3, map: mapaEmpleado
-    });
-  }
-}
-
-function iniciarGPSBackground(lat0, lng0){
-  try {
-    var BGGeo = Capacitor.Plugins.BackgroundGeolocation;
-    BGGeo.addWatcher({
-      backgroundMessage: 'APDAYC está registrando tu ruta de trabajo.',
-      backgroundTitle: 'GPS Activo - APDAYC',
-      requestPermissions: true,
-      stale: false,
-      distanceFilter: 5
-    }, function(location, error){
-      if(error){
-        if(error.code === 'NOT_AUTHORIZED'){
-          if(window.confirm('APDAYC necesita acceso a tu ubicación en segundo plano. ¿Ir a configuración?')){
-            BGGeo.openSettings();
-          }
-        }
-        return;
-      }
-      if(jornadaActiva && location){
-        actualizarPunto(location.latitude, location.longitude);
-      }
-    }).then(function(id){ watchId = id; });
-  } catch(e) {
-    console.warn('Background GPS no disponible, usando watchPosition:', e);
-    watchId = navigator.geolocation.watchPosition(function(p){
-      actualizarPunto(p.coords.latitude, p.coords.longitude);
-    }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000, distanceFilter: 5});
-  }
-}
-
-function iniciarJornada(){
-  if(!navigator.geolocation && !esCapacitor){ alert('Tu dispositivo no soporta GPS'); return; }
-  var msg = document.getElementById('fichajeMsg');
-  msg.innerText = 'Obteniendo ubicación...';
-
-  var obtenerPosicion = function(callback, errorCb){
-    if(esCapacitor){
-      try {
-        Capacitor.Plugins.Geolocation.getCurrentPosition({enableHighAccuracy: true})
-          .then(function(pos){ callback(pos.coords); })
-          .catch(function(e){ errorCb(e); });
-      } catch(e){ navigator.geolocation.getCurrentPosition(function(p){ callback(p.coords); }, errorCb); }
-    } else {
-      navigator.geolocation.getCurrentPosition(function(p){ callback(p.coords); }, errorCb);
-    }
-  };
-
-  obtenerPosicion(function(coords){
-    jornadaActiva = true;
-    jornadaInicio = new Date();
-    jornadaId = getTodayStr()+'_'+currentUserEmail+'_'+Date.now();
-    rutaPuntos = [{lat: coords.latitude, lng: coords.longitude, t: new Date().toISOString()}];
-
-    var db = firebase.firestore();
-    var nombre = USUARIOS[currentUserEmail.toLowerCase()]||currentUserEmail.split('@')[0];
-    db.collection('jornadas').doc(jornadaId).set({
-      email: currentUserEmail,
-      nombre: nombre,
-      inicio: jornadaInicio.toISOString(),
-      fecha: getTodayStr(),
-      activa: true,
-      ruta: rutaPuntos,
-      lat: coords.latitude,
-      lng: coords.longitude
-    });
-
-    document.getElementById('statusDot').classList.add('activo');
-    document.getElementById('statusText').innerText = 'Jornada activa';
-    document.getElementById('btnIniciar').classList.add('btn-disabled');
-    document.getElementById('btnIniciar').disabled = true;
-    document.getElementById('btnFinalizar').classList.remove('btn-disabled');
-    document.getElementById('btnFinalizar').disabled = false;
-    msg.innerText = '✅ Jornada iniciada'+(esCapacitor?' (GPS background activo)':'');
-
-    timerInterval = setInterval(actualizarTimer, 1000);
-
-    // Marcador de INICIO en el mapa del empleado
-    if(mapaEmpleado){
-      window._marcadorInicio = new google.maps.Marker({
-        position: {lat: coords.latitude, lng: coords.longitude},
-        map: mapaEmpleado,
-        title: 'Inicio de jornada',
-        label: {text: '▶', color: 'white', fontSize: '12px'},
-        icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
-               fillColor: '#16a34a', fillOpacity: 1,
-               strokeColor: 'white', strokeWeight: 2}
-      });
-    }
-
-    // Iniciar GPS: background si es APK, watchPosition si es navegador
-    if(esCapacitor){
-      iniciarGPSBackground(coords.latitude, coords.longitude);
-    } else {
-      watchId = navigator.geolocation.watchPosition(function(p){
-        actualizarPunto(p.coords.latitude, p.coords.longitude);
-      }, null, {enableHighAccuracy: true, maximumAge: 0, timeout: 10000, distanceFilter: 5});
-    }
-
-  }, function(){ msg.style.color='#dc2626'; msg.innerText='Error al obtener GPS. Activa la ubicación.'; });
-}
-
-function finalizarJornada(){
-  if(!jornadaActiva) return;
-  jornadaActiva = false;
-  clearInterval(timerInterval);
-
-  // Agregar marcador de FIN en el mapa
-  if(mapaEmpleado && rutaPuntos.length > 0){
-    var ultimoPunto = rutaPuntos[rutaPuntos.length-1];
-    window._marcadorFin = new google.maps.Marker({
-      position: {lat: ultimoPunto.lat, lng: ultimoPunto.lng},
-      map: mapaEmpleado,
-      title: 'Fin de jornada',
-      icon: {path: google.maps.SymbolPath.CIRCLE, scale: 10,
-             fillColor: '#dc2626', fillOpacity: 1,
-             strokeColor: 'white', strokeWeight: 2}
-    });
-  }
-
-  // Detener GPS según plataforma
-  if(esCapacitor && watchId){
-    try {
-      Capacitor.Plugins.BackgroundGeolocation.removeWatcher({id: watchId});
-    } catch(e){ navigator.geolocation.clearWatch(watchId); }
-  } else {
-    navigator.geolocation.clearWatch(watchId);
-  }
-
-  var fin = new Date();
-  var diffMs = fin - jornadaInicio;
-  var horas = Math.floor(diffMs/3600000);
-  var mins = Math.floor((diffMs%3600000)/60000);
-  var horasStr = horas+'h '+mins+'m';
-
-  var db = firebase.firestore();
-  db.collection('jornadas').doc(jornadaId).update({
-    fin: fin.toISOString(),
-    activa: false,
-    ruta: rutaPuntos,
-    duracion: horasStr,
-    duracionMs: diffMs
-  });
-
-  document.getElementById('statusDot').classList.remove('activo');
-  document.getElementById('statusText').innerText = 'Jornada finalizada';
-  document.getElementById('btnIniciar').classList.remove('btn-disabled');
-  document.getElementById('btnIniciar').disabled = false;
-  document.getElementById('btnFinalizar').classList.add('btn-disabled');
-  document.getElementById('btnFinalizar').disabled = true;
-  document.getElementById('fichajeMsg').innerText = '✅ Jornada guardada: '+horasStr;
-  document.getElementById('timerDisplay').innerText = '00:00:00';
-
-  cargarHistorialPersonal(currentUserEmail);
-  jornadaId = null; rutaPuntos = [];
-}
-
-function actualizarTimer(){
-  if(!jornadaInicio) return;
-  var diff = new Date() - jornadaInicio;
-  var h = Math.floor(diff/3600000);
-  var m = Math.floor((diff%3600000)/60000);
-  var s = Math.floor((diff%60000)/1000);
-  document.getElementById('timerDisplay').innerText =
-    String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-}
-
-function escucharEmpleados(){
-  if(!firebase.firestore) return;
-  var db = firebase.firestore();
-  db.collection('jornadas').where('fecha','==',getTodayStr()).where('activa','==',true)
-    .onSnapshot(function(snap){
-      var lista = document.getElementById('listaEmpleados');
-      if(!lista) return;
-      if(snap.empty){ lista.innerHTML='<div class="no-reporte">No hay empleados activos ahora.</div>'; return; }
-      var html='';
-      snap.forEach(function(doc){
-        var d=doc.data();
-        // Resolver nombre: usar USUARIOS si d.nombre está vacío o es '?'
-        var nombreMostrar = (d.nombre && d.nombre !== '?' && d.nombre.trim() !== '')
-          ? d.nombre
-          : (USUARIOS[String(d.email||'').toLowerCase()] || String(d.email||'').split('@')[0] || 'Agente');
-        // Si el nombre estaba vacío o ?, corregirlo en Firestore automáticamente
-        if(!d.nombre || d.nombre === '?' || d.nombre.trim() === ''){
-          firebase.firestore().collection('jornadas').doc(doc.id).update({nombre: nombreMostrar}).catch(function(){});
-        }
-        var inicial = nombreMostrar.charAt(0).toUpperCase() || '?';
-        html+='<div class="empleado-card">';
-        html+='<div class="emp-dot online"></div>';
-        html+='<div class="emp-info"><div class="emp-nombre">'+nombreMostrar+'</div>';
-        html+='<div class="emp-horas">Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
-        html+='<button class="emp-ver-btn" onclick="verRutaEmpleado('+JSON.stringify(d.ruta)+','+d.lat+','+d.lng+')">Ver</button>';
-        html+='</div>';
-        // Update map marker y ruta en tiempo real
-        if(mapaAdminMap && d.lat && d.lng){
-          var posActual = {lat:d.lat, lng:d.lng};
-          
-          // Marcador de posición actual (se mueve)
-          if(marcadoresAdmin[d.email]){
-            marcadoresAdmin[d.email].setPosition(posActual);
-          } else {
-            // Marcador de INICIO (verde)
-            if(d.ruta && d.ruta.length > 0){
-              new google.maps.Marker({
-                position: {lat:d.ruta[0].lat, lng:d.ruta[0].lng},
-                map: mapaAdminMap,
-                title: 'Inicio - '+nombreMostrar,
-                icon: {path: google.maps.SymbolPath.CIRCLE, scale: 8,
-                       fillColor: '#16a34a', fillOpacity: 1,
-                       strokeColor: 'white', strokeWeight: 2}
-              });
-            }
-            // Marcador posición actual (azul con inicial)
-            marcadoresAdmin[d.email] = new google.maps.Marker({
-              position: posActual, map: mapaAdminMap,
-              title: nombreMostrar,
-              label: {text: inicial, color: 'white', fontSize: '11px', fontWeight: 'bold'},
-              icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
-                     fillColor: '#2f5597', fillOpacity: 1,
-                     strokeColor: 'white', strokeWeight: 2}
-            });
-          }
-          
-          // Trazar ruta en tiempo real
-          if(d.ruta && d.ruta.length > 1){
-            if(!window._rutasAdmin) window._rutasAdmin = {};
-            if(window._rutasAdmin[d.email]) window._rutasAdmin[d.email].setMap(null);
-            window._rutasAdmin[d.email] = new google.maps.Polyline({
-              path: d.ruta.map(function(p){ return {lat:p.lat,lng:p.lng}; }),
-              strokeColor: '#2f5597', strokeWeight: 3,
-              strokeOpacity: 0.7, map: mapaAdminMap
-            });
-          }
-        }
-      });
-      lista.innerHTML=html;
-    });
-}
-
-function verRutaEmpleado(ruta, lat, lng){
-  if(!mapaAdminMap || !ruta || ruta.length===0) return;
-  mapaAdminMap.setCenter({lat:lat, lng:lng});
-  mapaAdminMap.setZoom(14);
-  new google.maps.Polyline({
-    path: ruta.map(function(r){ return {lat:r.lat, lng:r.lng}; }),
-    strokeColor:'#2f5597', strokeWeight:3, map:mapaAdminMap
-  });
-}
-
-function cargarHistorialPersonal(email){
-  var db = firebase.firestore();
-  db.collection('jornadas').where('email','==',email).where('fecha','==',getTodayStr())
-    .get().then(function(snap){
-      var lista = document.getElementById('listaHistorialPersonal');
-      if(!lista) return;
-      if(snap.empty){ lista.innerHTML='<div style="color:#888;font-size:13px;">Sin registros hoy.</div>'; return; }
-      var html='';
-      snap.forEach(function(doc){
-        var d=doc.data();
-        html+='<div class="hist-item">';
-        html+='<b>Entrada:</b> '+new Date(d.inicio).toLocaleTimeString('es-PE')+'<br>';
-        if(d.fin) html+='<b>Salida:</b> '+new Date(d.fin).toLocaleTimeString('es-PE')+'<br>';
-        if(d.duracion) html+='<b>Total:</b> '+d.duracion;
-        html+='</div>';
-      });
-      lista.innerHTML=html;
-    });
-}
-
-function cargarHistorialAdmin(){
-  var fecha = document.getElementById('fechaHistorial').value;
-  if(!fecha) return;
-  var db = firebase.firestore();
-  var lista = document.getElementById('listaHistorialAdmin');
-  lista.innerHTML='<div style="color:#888;font-size:13px;">Cargando...</div>';
-  db.collection('jornadas').where('fecha','==',fecha).get().then(function(snap){
-    if(snap.empty){ lista.innerHTML='<div style="color:#888;font-size:13px;">Sin registros.</div>'; return; }
-    var html='';
-    snap.forEach(function(doc){
-      var d=doc.data();
-      html+='<div class="hist-item">';
-      html+='<b>'+d.nombre+'</b><br>';
-      html+='Entrada: '+new Date(d.inicio).toLocaleTimeString('es-PE');
-      if(d.fin) html+=' | Salida: '+new Date(d.fin).toLocaleTimeString('es-PE');
-      if(d.duracion) html+=' | <b>'+d.duracion+'</b>';
-      html+='</div>';
-    });
-    lista.innerHTML=html;
-  });
-}
-</script>
-
-
-<script>
-var mapsReady = false;
-function onMapsLoaded(){ mapsReady = true; }
-var jornadaActiva = false;
-var jornadaInicio = null;
-var timerInterval = null;
-var watchId = null;
-var rutaActual = [];
-var mapaInstance = null;
-var rutaPolyline = null;
-var mapaRutaHistMap = null;
-
-function verRutaHistorica(){
-  var email = document.getElementById('selectAgentRuta').value;
-  var fecha = document.getElementById('fechaRutaHistorica').value;
-  var infoEl = document.getElementById('infoRutaHistorica');
-  var mapaDiv = document.getElementById('mapaRutaHistorica');
-
-  if(!email){ alert('Selecciona un agente.'); return; }
-  if(!fecha){ alert('Selecciona una fecha.'); return; }
-
-  infoEl.innerText = 'Buscando jornadas...';
-  mapaDiv.style.display = 'none';
-
-  var db = firebase.firestore();
-  // Buscar por email y fecha (formato YYYY-MM-DD)
-  db.collection('jornadas')
-    .where('email','==',email)
-    .get().then(function(snap){
-      if(snap.empty){
-        infoEl.innerText = '⚠️ No hay jornadas registradas para este agente.';
-        return;
-      }
-      
-      // Filtrar por fecha manualmente (por si el formato varía)
-      var snapFiltrado = [];
-      snap.forEach(function(doc){
-        var d = doc.data();
-        var docFecha = (d.fecha||'').trim();
-        var docInicio = (d.inicio||'').substring(0,10);
-        if(docFecha === fecha || docInicio === fecha){
-          snapFiltrado.push(d);
-        }
-      });
-      
-      if(snapFiltrado.length === 0){
-        // Mostrar fechas disponibles para ayudar al usuario
-        var fechasDisp = [];
-        snap.forEach(function(doc){
-          var f = (doc.data().fecha||doc.data().inicio||'').substring(0,10);
-          if(f && fechasDisp.indexOf(f)===-1) fechasDisp.push(f);
-        });
-        fechasDisp.sort().reverse();
-        infoEl.innerHTML = '⚠️ No hay jornadas para el <b>'+fecha+'</b>.<br>'+
-          (fechasDisp.length>0?'Fechas disponibles: <b>'+fechasDisp.slice(0,5).join(', ')+'</b>':'Sin jornadas registradas.');
-        return;
-      }
-      
-      // Crear objeto snap compatible
-      var snapCompat = { empty: false, forEach: function(cb){ snapFiltrado.forEach(function(d){ cb({data:function(){return d;}}); }); } };
-      var snap = snapCompat;
-      
-      if(true){
-
-      // Tomar la jornada con más puntos de ruta
-      var mejor = null;
-      snap.forEach(function(doc){
-        var d = doc.data();
-        if(!mejor || (d.ruta && d.ruta.length > (mejor.ruta||[]).length)){
-          mejor = d;
-        }
-      });
-
-      var ruta = mejor.ruta || [];
-      if(ruta.length === 0){
-        infoEl.innerText = '⚠️ La jornada existe pero no tiene puntos de ruta guardados.';
-        return;
-      }
-      // Si solo hay 1 punto igual mostramos el mapa con el marcador
-
-      // Mostrar mapa
-      mapaDiv.style.display = 'block';
-
-      // Inicializar mapa si no existe
-      if(!mapaRutaHistMap){
-        mapaRutaHistMap = new google.maps.Map(mapaDiv, {
-          zoom: 15,
-          center: {lat: ruta[0].lat, lng: ruta[0].lng},
-          mapTypeId: 'roadmap'
-        });
-      } else {
-        mapaRutaHistMap.setCenter({lat: ruta[0].lat, lng: ruta[0].lng});
-      }
-
-      // Limpiar polyline anterior
-      if(window._histPolyline) window._histPolyline.setMap(null);
-      if(window._histMarkerStart) window._histMarkerStart.setMap(null);
-      if(window._histMarkerEnd) window._histMarkerEnd.setMap(null);
-
-      // Dibujar ruta
-      var path = ruta.map(function(p){ return {lat:p.lat, lng:p.lng}; });
-      if(path.length >= 2){
-        window._histPolyline = new google.maps.Polyline({
-          path: path,
-          strokeColor: '#2f5597',
-          strokeWeight: 4,
-          strokeOpacity: 0.85,
-          map: mapaRutaHistMap
-        });
-      }
-
-      // Marcador inicio (verde)
-      window._histMarkerStart = new google.maps.Marker({
-        position: path[0],
-        map: mapaRutaHistMap,
-        title: 'Inicio',
-        label: { text: '▶', color: 'white', fontSize: '14px' },
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#16a34a', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2 }
-      });
-
-      // Marcador fin (rojo)
-      window._histMarkerEnd = new google.maps.Marker({
-        position: path[path.length-1],
-        map: mapaRutaHistMap,
-        title: 'Fin',
-        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#dc2626', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2 }
-      });
-
-      // Ajustar zoom para ver toda la ruta
-      var bounds = new google.maps.LatLngBounds();
-      path.forEach(function(p){ bounds.extend(p); });
-      mapaRutaHistMap.fitBounds(bounds);
-
-      // Info
-      var nombre = mejor.nombre || email.split('@')[0];
-      } // cierre if(true)
-      var inicio = mejor.inicio ? new Date(mejor.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '?';
-      var fin = mejor.fin ? new Date(mejor.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : 'En curso';
-      var dur = mejor.duracion || '';
-      infoEl.innerHTML = '👤 <b>'+nombre+'</b> — '+fecha+
-        '<br>🕐 Inicio: '+inicio+' | Fin: '+fin+(dur?' | Duración: '+dur:'')+
-        '<br>📍 '+ruta.length+' puntos de ruta registrados'+
-        '<br><span style="color:#16a34a;">● Inicio</span> &nbsp; <span style="color:#dc2626;">● Fin</span>';
-
-    }).catch(function(e){
-      infoEl.innerText = 'Error al cargar: '+e.message;
-    });
-}
-var marcadoresEmpleados = {};
-
-function initFichaje(email, isAdmin){
-  if(isAdmin){
-    // Listen for new notifications in real time
-    var db = firebase.firestore();
-    db.collection('notificaciones')
-      .where('leida','==',false)
-      .orderBy('timestamp','desc')
-      .limit(20)
-      .onSnapshot(function(snap){
-        var lista = document.getElementById('listaNotificaciones');
-        if(!lista) return;
-        if(snap.empty){ lista.innerHTML='<div class="no-reporte">Sin notificaciones nuevas</div>'; return; }
-        var html='';
-        snap.forEach(function(doc){
-          var d=doc.data();
-          html+='<div class="notif-card"><div class="notif-msg">'+d.mensaje+'</div>';
-          html+='<div class="notif-time">'+d.fecha+' '+d.hora+'</div></div>';
-        });
-        lista.innerHTML=html;
-      });
-  }
   var hoy = new Date();
   document.getElementById('fechaFichaje') && (document.getElementById('fechaFichaje').value = getTodayStr());
 
@@ -3181,6 +2618,38 @@ function initFichaje(email, isAdmin){
   } else {
     document.getElementById('fichajeEmpleado').style.display='block';
     document.getElementById('fichajeAdmin').style.display='none';
+    // Inicializar mapa del agente
+    if(document.getElementById('mapaFichaje')){
+      setTimeout(function(){
+        mapaEmpleado = new google.maps.Map(document.getElementById('mapaFichaje'), {
+          zoom: 14,
+          center: {lat: -12.0464, lng: -77.0428},
+          mapTypeId: 'roadmap',
+          disableDefaultUI: true,
+          zoomControl: true
+        });
+        // Centrar en ubicación actual si disponible
+        if(navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(function(pos){
+            var latLng = {lat: pos.coords.latitude, lng: pos.coords.longitude};
+            mapaEmpleado.setCenter(latLng);
+            new google.maps.Marker({
+              position: latLng,
+              map: mapaEmpleado,
+              title: 'Tu ubicación',
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: '#2f5597',
+                fillOpacity: 1,
+                strokeColor: 'white',
+                strokeWeight: 2
+              }
+            });
+          });
+        }
+      }, 300);
+    }
   }
   cargarHistorialPropio(email);
 
@@ -4063,10 +3532,14 @@ function descargarCobrosExcel(){
     csv += [x.fecha, x.nombreAgente, '"'+(x.nombreLocal||'').replace(/"/g,"''")+'"', x.ruc, x.factura, x.periodo, x.tipo, x.metodo, x.monto.toFixed(2)].join(',')+'\n';
   });
   var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'cobros_'+document.getElementById('cobrosAdminFechaDesde').value+'_al_'+document.getElementById('cobrosAdminFechaHasta').value+'.csv';
+  a.href = url;
+  a.download = 'Cobros_GCI_'+document.getElementById('cobrosAdminFechaDesde').value+'_al_'+document.getElementById('cobrosAdminFechaHasta').value+'.csv';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
 }
 
 // --- Descargar Excel con Dashboard HTML ---
@@ -4127,10 +3600,14 @@ function descargarCobrosDashboard(){
   html += '</body></html>';
 
   var blob = new Blob([html], {type:'text/html;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'dashboard_cobros_'+desde+'_al_'+hasta+'.html';
+  a.href = url;
+  a.download = 'Cobros_GCI_'+desde+'_al_'+hasta+'.html';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
 }
 </script>
 
