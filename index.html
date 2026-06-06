@@ -2572,8 +2572,7 @@ function initFichaje(email, isAdmin){
     document.getElementById('fichajeEmpleado').style.display = isAdminConRuta ? 'block' : 'none';
     document.getElementById('fichajeAdmin').style.display='block';
     setTimeout(function(){
-      initMapaAdmin();
-      cargarEmpleadosActivos();
+      initMapaAdmin(); // initMapaAdmin llama cargarEmpleadosActivos cuando el mapa está listo
     }, 400);
   } else {
     document.getElementById('fichajeEmpleado').style.display='block';
@@ -2774,11 +2773,13 @@ function initMapaAdmin(){
     center: {lat: -12.0464, lng: -77.0428},
     mapTypeId: 'roadmap'
   });
+  // Mapa listo - ahora sí cargar agentes
+  cargarEmpleadosActivos();
 }
 
 function cargarEmpleadosActivos(){
   if(!mapaInstance){
-    setTimeout(cargarEmpleadosActivos, 500);
+    setTimeout(cargarEmpleadosActivos, 300);
     return;
   }
   var db = firebase.firestore();
@@ -2796,20 +2797,29 @@ function cargarEmpleadosActivos(){
         var inicial = (d.nombre||'?')[0].toUpperCase();
         if(d.activo){
           // Poner marcador si tiene coordenadas
-          if(d.lat && d.lng){
+          if(d.lat && d.lng && mapaInstance){
             var pos = {lat: parseFloat(d.lat), lng: parseFloat(d.lng)};
             if(marcadoresEmpleados[d.email]){
               marcadoresEmpleados[d.email].setPosition(pos);
+              marcadoresEmpleados[d.email].setMap(mapaInstance);
             } else {
               marcadoresEmpleados[d.email] = new google.maps.Marker({
-                position: pos, map: mapaInstance,
-                title: d.nombre,
-                label: {text: inicial, color: 'white', fontSize: '12px', fontWeight: 'bold'},
-                icon: {path: google.maps.SymbolPath.CIRCLE, scale: 16,
-                       fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+                position: pos,
+                map: mapaInstance,
+                title: d.nombre || d.email,
+                label: {text: inicial, color: 'white', fontSize: '13px', fontWeight: 'bold'},
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 18,
+                  fillColor: '#16a34a',
+                  fillOpacity: 1,
+                  strokeWeight: 3,
+                  strokeColor: 'white'
+                }
               });
             }
             mapaInstance.panTo(pos);
+            mapaInstance.setZoom(13);
           }
           html += '<div class="empleado-activo-card">';
           html += '<div class="emp-avatar">'+inicial+'</div>';
