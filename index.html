@@ -2665,7 +2665,18 @@ function finalizarJornada(){
   if(!jornadaActiva) return;
   jornadaActiva = false;
   clearInterval(timerInterval);
-  if(watchId) navigator.geolocation.clearWatch(watchId);
+  // Detener GPS
+  if(watchId){
+    var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+    if(isCapacitor){
+      try{
+        window.Capacitor.Plugins.Geolocation.clearWatch({id: watchId});
+      } catch(e){ console.warn(e); }
+    } else {
+      navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = null;
+  }
 
   var fin = new Date();
   var horas = Math.floor((fin - jornadaInicio)/3600000);
@@ -2728,19 +2739,56 @@ function startTimer(){
   }, 1000);
 }
 
+function guardarPuntoGPS(email, lat, lng){
+  var punto = {lat: lat, lng: lng, t: new Date().toISOString()};
+  rutaActual.push(punto);
+  var db = firebase.firestore();
+  db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
+    ruta: rutaActual,
+    lat: lat,
+    lng: lng
+  });
+}
+
 function startGPS(email){
+  var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+  if(isCapacitor){
+    // APK: usar Capacitor Geolocation plugin con permisos background
+    try{
+      var Geo = window.Capacitor.Plugins.Geolocation;
+      // Pedir permiso background primero
+      Geo.requestPermissions({permissions:['location','coarseLocation']}).then(function(){
+        // watchPosition de Capacitor corre con FOREGROUND_SERVICE = background real
+        Geo.watchPosition({
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }, function(pos, err){
+          if(err){ console.warn('GPS error:', err); return; }
+          guardarPuntoGPS(email, pos.coords.latitude, pos.coords.longitude);
+        }).then(function(id){
+          watchId = id;
+        });
+      }).catch(function(e){
+        console.warn('Permiso denegado, fallback:', e);
+        startGPSFallback(email);
+      });
+    } catch(e){
+      console.warn('Capacitor Geolocation no disponible:', e);
+      startGPSFallback(email);
+    }
+  } else {
+    // PWA navegador
+    startGPSFallback(email);
+  }
+}
+
+function startGPSFallback(email){
   watchId = navigator.geolocation.watchPosition(function(pos){
-    var punto = {lat: pos.coords.latitude, lng: pos.coords.longitude, t: new Date().toISOString()};
-    rutaActual.push(punto);
-    // Update every 10 points to save bandwidth
-    // Actualizar posición en Firestore en cada punto para tiempo real
-    var db = firebase.firestore();
-    db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
-      ruta: rutaActual,
-      lat: pos.coords.latitude,
-      lng: pos.coords.longitude
-    });
-  }, null, {enableHighAccuracy: true, maximumAge: 30000, timeout: 27000});
+    guardarPuntoGPS(email, pos.coords.latitude, pos.coords.longitude);
+  }, function(err){ console.warn('GPS fallback error:', err); },
+  {enableHighAccuracy: true, maximumAge: 0, timeout: 27000});
 }
 
 function limpiarNotificaciones(){
@@ -2772,29 +2820,35 @@ function cargarEmpleadosActivos(){
   var db = firebase.firestore();
   var lista = document.getElementById('listaEmpleados');
   // onSnapshot = escucha cambios en tiempo real
-  db.collection('fichajes').where('fecha','==',getTodayStr())
+  var hoy = getTodayStr();
+  db.collection('fichajes')
     .onSnapshot(function(snap){
       var html = '';
       snap.forEach(function(doc){
         var d = doc.data();
+        if(d.fecha !== hoy) return; // filtrar en cliente
         var inicial = (d.nombre||'?')[0].toUpperCase();
-        if(d.activo && d.lat){
-          var pos = {lat: d.lat, lng: d.lng};
-          if(marcadoresEmpleados[d.email]){
-            marcadoresEmpleados[d.email].setPosition(pos);
-          } else {
-            marcadoresEmpleados[d.email] = new google.maps.Marker({
-              position: pos, map: mapaInstance,
-              title: d.nombre,
-              label: {text: inicial, color: 'white'},
-              icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
-                     fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
-            });
+        if(d.activo){
+          // Poner marcador si tiene coordenadas
+          if(d.lat && d.lng){
+            var pos = {lat: parseFloat(d.lat), lng: parseFloat(d.lng)};
+            if(marcadoresEmpleados[d.email]){
+              marcadoresEmpleados[d.email].setPosition(pos);
+            } else {
+              marcadoresEmpleados[d.email] = new google.maps.Marker({
+                position: pos, map: mapaInstance,
+                title: d.nombre,
+                label: {text: inicial, color: 'white', fontSize: '12px', fontWeight: 'bold'},
+                icon: {path: google.maps.SymbolPath.CIRCLE, scale: 16,
+                       fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+              });
+            }
+            mapaInstance.panTo(pos);
           }
           html += '<div class="empleado-activo-card">';
           html += '<div class="emp-avatar">'+inicial+'</div>';
           html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
-          html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+          html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+(d.lat?' · 📍':'· Sin GPS')+'</div></div>';
           html += '<button onclick="verRutaEmpleado(\'' + d.email + '\')" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
           html += '</div>';
         } else {
