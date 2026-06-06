@@ -2788,9 +2788,11 @@ function cargarEmpleadosActivos(){
   db.collection('fichajes')
     .onSnapshot(function(snap){
       var html = '';
+      var totalHoy = 0;
       snap.forEach(function(doc){
         var d = doc.data();
         if(d.fecha !== hoy) return; // filtrar en cliente
+        totalHoy++;
         var inicial = (d.nombre||'?')[0].toUpperCase();
         if(d.activo){
           // Poner marcador si tiene coordenadas
@@ -2828,7 +2830,7 @@ function cargarEmpleadosActivos(){
           html += '</div>';
         }
       });
-      if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún empleado activo hoy.</div>';
+      if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún agente ha iniciado jornada hoy ('+hoy+'). Total registros encontrados: '+totalHoy+'</div>';
     }, function(err){
       console.error('Error escuchando fichajes:', err);
     });
