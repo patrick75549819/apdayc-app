@@ -50,7 +50,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh;}
 .nav-label{font-size:11px;color:#aaa;margin-top:2px;display:block;}
 
 /* PANELS */
-.panel{display:none;padding:16px 16px 90px 16px;}
+.panel{display:none;padding:16px 16px 90px 16px;overflow-y:auto;}
 .panel.active{display:block;}
 
 /* CARDS */
@@ -555,42 +555,6 @@ select.form-input{cursor:pointer;}
 
 
   <!-- FICHAJE PANEL -->
-  <div class="panel" id="panelFichaje">
-    <!-- VISTA EMPLEADO -->
-    <div id="fichajeEmpleado">
-      <div id="fichajeControles">
-      <div class="fichaje-card">
-        <div class="fichaje-status">
-          <div class="status-dot" id="statusDot"></div>
-          <div class="status-text" id="statusText">Sin jornada activa</div>
-        </div>
-        <div class="timer-display" id="timerDisplay">00:00:00</div>
-        <button class="btn-iniciar" id="btnIniciar" onclick="iniciarJornada()">▶ Iniciar Jornada</button>
-        <button class="btn-finalizar btn-disabled" id="btnFinalizar" onclick="finalizarJornada()" disabled style="margin-top:8px;">⏹ Finalizar Jornada</button>
-        <div id="fichajeMsg" style="text-align:center;font-size:12px;color:#888;margin-top:10px;"></div>
-      </div>
-      <div class="fichaje-card" id="historialPersonal">
-        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📋 Mis últimos registros</div>
-        <div id="listaHistorialPersonal"></div>
-      </div>
-    </div>
-
-    <!-- VISTA ADMIN -->
-    <div id="fichajeAdmin" style="display:none;">
-      <div class="fichaje-card">
-        <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Equipo en tiempo real</div>
-        <div id="mapaAdmin"></div>
-        <div id="listaEmpleados" style="margin-top:12px;"></div>
-      </div>
-      <div class="fichaje-card">
-        <div style="font-size:13px;font-weight:700;color:#2f5597;margin-bottom:8px;">📅 Historial por fecha</div>
-        <input type="date" class="calendar-input" id="fechaHistorial" onchange="cargarHistorialAdmin()">
-        <div id="listaHistorialAdmin"></div>
-      </div>
-    </div>
-  </div>
-
-
   <!-- FICHAJE PANEL -->
   <div class="panel" id="panelFichaje">
     <br>
@@ -1719,8 +1683,15 @@ function cambiarPanel(p){
   if(targetPanel) targetPanel.classList.add('active');
   if(targetNav) targetNav.classList.add('active');
   window.scrollTo({top:0, left:0, behavior:'instant'});
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
   try{ document.getElementById('appContent').scrollTop = 0; } catch(e){}
   try{ document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch(e){}
+  // Scroll específico del panel activo al tope
+  try{
+    var activePanel = document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1));
+    if(activePanel) activePanel.scrollTop = 0;
+  } catch(e){}
 }
 
 function irACalculo(){ cambiarPanel('calculo'); }
@@ -2068,7 +2039,7 @@ function renderMetaItems(items, containerEl){
     var pagado=item.estado==='COBRADO';
     html+='<div class="meta-item">';
     html+='<div class="meta-item-info">';
-    html+='<div class="meta-item-nombre">'+(pagado?'<s>':'')+item.nombre+(pagado?'</s>':'')+'</div>';
+    html+='<div class="meta-item-nombre" style="color:'+(pagado?'#065f46':'#1a1a2e')+'">'+item.nombre+'</div>';
     html+='<div class="meta-item-monto">S/ '+item.tarifa.toFixed(2)+'</div>';
     html+='</div>';
     html+='<div class="meta-item-actions">';
@@ -2603,12 +2574,13 @@ function initFichaje(email, isAdmin){
   var isAdminSinRuta = ADMINS_SIN_RUTA.indexOf(email.toLowerCase())>-1;
   var isAdminConRuta = ADMINS_CON_RUTA.indexOf(email.toLowerCase())>-1;
   if(isAdmin){
-    var fc = document.getElementById('fichajeControles');
-    if(fc) fc.style.display = isAdminConRuta ? 'block' : 'none';
+    document.getElementById('fichajeEmpleado').style.display = isAdminConRuta ? 'block' : 'none';
     document.getElementById('fichajeAdmin').style.display='block';
-    initMapaAdmin();
-    cargarEmpleadosActivos();
-    setInterval(cargarEmpleadosActivos, 15000); // refresh cada 15s
+    setTimeout(function(){
+      initMapaAdmin();
+      cargarEmpleadosActivos();
+    }, 400);
+    setInterval(cargarEmpleadosActivos, 15000);
   } else {
     document.getElementById('fichajeEmpleado').style.display='block';
     document.getElementById('fichajeAdmin').style.display='none';
@@ -2984,6 +2956,9 @@ var cobrosImagenes = [];          // base64 de fotos adjuntas
 
 // --- Inicialización por rol ---
 function initCobros(email, isAdmin){
+  // Scroll al tope del panel cobros cuando se inicializa
+  var panelEl = document.getElementById('panelCobros');
+  if(panelEl) panelEl.scrollTop = 0;
   if(isAdmin){
     document.getElementById('cobrosAdmin').style.display = 'block';
     document.getElementById('cobrosAgente').style.display = 'block'; // admins también pueden registrar
