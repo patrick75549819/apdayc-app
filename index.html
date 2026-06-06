@@ -2580,7 +2580,6 @@ function initFichaje(email, isAdmin){
       initMapaAdmin();
       cargarEmpleadosActivos();
     }, 400);
-    setInterval(cargarEmpleadosActivos, 15000);
   } else {
     document.getElementById('fichajeEmpleado').style.display='block';
     document.getElementById('fichajeAdmin').style.display='none';
@@ -2734,14 +2733,13 @@ function startGPS(email){
     var punto = {lat: pos.coords.latitude, lng: pos.coords.longitude, t: new Date().toISOString()};
     rutaActual.push(punto);
     // Update every 10 points to save bandwidth
-    if(rutaActual.length % 5 === 0){
-      var db = firebase.firestore();
-      db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
-        ruta: rutaActual,
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude
-      });
-    }
+    // Actualizar posición en Firestore en cada punto para tiempo real
+    var db = firebase.firestore();
+    db.collection('fichajes').doc(getTodayStr()+'_'+email).update({
+      ruta: rutaActual,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude
+    });
   }, null, {enableHighAccuracy: true, maximumAge: 30000, timeout: 27000});
 }
 
@@ -2767,48 +2765,55 @@ function initMapaAdmin(){
 }
 
 function cargarEmpleadosActivos(){
-  if(!mapaInstance) return;
+  if(!mapaInstance){
+    setTimeout(cargarEmpleadosActivos, 500);
+    return;
+  }
   var db = firebase.firestore();
   var lista = document.getElementById('listaEmpleados');
-  db.collection('fichajes').where('fecha','==',getTodayStr()).get().then(function(snap){
-    var html = '';
-    snap.forEach(function(doc){
-      var d = doc.data();
-      var inicial = (d.nombre||'?')[0].toUpperCase();
-      if(d.activo && d.lat){
-        var pos = {lat: d.lat, lng: d.lng};
-        if(marcadoresEmpleados[d.email]){
-          marcadoresEmpleados[d.email].setPosition(pos);
+  // onSnapshot = escucha cambios en tiempo real
+  db.collection('fichajes').where('fecha','==',getTodayStr())
+    .onSnapshot(function(snap){
+      var html = '';
+      snap.forEach(function(doc){
+        var d = doc.data();
+        var inicial = (d.nombre||'?')[0].toUpperCase();
+        if(d.activo && d.lat){
+          var pos = {lat: d.lat, lng: d.lng};
+          if(marcadoresEmpleados[d.email]){
+            marcadoresEmpleados[d.email].setPosition(pos);
+          } else {
+            marcadoresEmpleados[d.email] = new google.maps.Marker({
+              position: pos, map: mapaInstance,
+              title: d.nombre,
+              label: {text: inicial, color: 'white'},
+              icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
+                     fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
+            });
+          }
+          html += '<div class="empleado-activo-card">';
+          html += '<div class="emp-avatar">'+inicial+'</div>';
+          html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
+          html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+          html += '<button onclick="verRutaEmpleado(\'' + d.email + '\')" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
+          html += '</div>';
         } else {
-          marcadoresEmpleados[d.email] = new google.maps.Marker({
-            position: pos, map: mapaInstance,
-            title: d.nombre,
-            label: {text: inicial, color: 'white'},
-            icon: {path: google.maps.SymbolPath.CIRCLE, scale: 14,
-                   fillColor: '#16a34a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white'}
-          });
+          if(marcadoresEmpleados[d.email]){
+            marcadoresEmpleados[d.email].setMap(null);
+            delete marcadoresEmpleados[d.email];
+          }
+          var horasStr = d.horasTrabajadas || (d.fin ? '—' : 'Sin fichar');
+          html += '<div class="empleado-inactivo-card">';
+          html += '<div class="emp-avatar" style="background:#94a3b8;">'+inicial+'</div>';
+          html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
+          html += '<div class="emp-info">⚪ '+horasStr+'</div></div>';
+          html += '</div>';
         }
-        html += '<div class="empleado-activo-card">';
-        html += '<div class="emp-avatar">'+inicial+'</div>';
-        html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
-        html += '<div class="emp-info">🟢 Activo desde '+new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
-        html += '<button onclick="verRutaEmpleado(&#39;'+d.email+'&#39;)" style="margin-left:auto;background:#2f5597;color:white;border:none;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer;">Ver ruta</button>';
-        html += '</div>';
-      } else {
-        if(marcadoresEmpleados[d.email]){
-          marcadoresEmpleados[d.email].setMap(null);
-          delete marcadoresEmpleados[d.email];
-        }
-        var horasStr = d.horasTrabajadas || (d.fin ? '—' : 'Sin fichar');
-        html += '<div class="empleado-inactivo-card">';
-        html += '<div class="emp-avatar" style="background:#94a3b8;">'+inicial+'</div>';
-        html += '<div><div class="emp-nombre">'+d.nombre+'</div>';
-        html += '<div class="emp-info">⚪ '+horasStr+'</div></div>';
-        html += '</div>';
-      }
+      });
+      if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún empleado activo hoy.</div>';
+    }, function(err){
+      console.error('Error escuchando fichajes:', err);
     });
-    if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún empleado activo hoy.</div>';
-  });
 }
 
 function verRutaEmpleado(email){
