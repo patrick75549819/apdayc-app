@@ -2633,7 +2633,7 @@ function finalizarJornada(){
     var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
     if(isCapacitor){
       try{
-        window.Capacitor.Plugins.Geolocation.clearWatch({id: watchId});
+        window.Capacitor.Plugins.BackgroundGeolocation.removeWatcher({id: watchId});
       } catch(e){ console.warn(e); }
     } else {
       navigator.geolocation.clearWatch(watchId);
@@ -2717,32 +2717,42 @@ function startGPS(email){
   var isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
   if(isCapacitor){
-    // APK: usar Capacitor Geolocation plugin con permisos background
+    // APK: usar BackgroundGeolocation community plugin - graba en 2do plano
     try{
-      var Geo = window.Capacitor.Plugins.Geolocation;
-      // Pedir permiso background primero
-      Geo.requestPermissions({permissions:['location','coarseLocation']}).then(function(){
-        // watchPosition de Capacitor corre con FOREGROUND_SERVICE = background real
-        Geo.watchPosition({
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }, function(pos, err){
-          if(err){ console.warn('GPS error:', err); return; }
-          guardarPuntoGPS(email, pos.coords.latitude, pos.coords.longitude);
-        }).then(function(id){
-          watchId = id;
-        });
+      var BgGeo = window.Capacitor.Plugins.BackgroundGeolocation;
+      BgGeo.addWatcher(
+        {
+          backgroundMessage: 'GCI está registrando tu ruta de trabajo.',
+          backgroundTitle: 'GPS Activo - GCI',
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 10
+        },
+        function callback(location, error){
+          if(error){
+            if(error.code === 'NOT_AUTHORIZED'){
+              if(window.confirm('GCI necesita acceso al GPS en segundo plano para registrar tu ruta. ¿Abrir configuración?')){
+                BgGeo.openSettings();
+              }
+            }
+            console.warn('BgGeo error:', error);
+            return;
+          }
+          guardarPuntoGPS(email, location.latitude, location.longitude);
+        }
+      ).then(function(watcher_id){
+        watchId = watcher_id;
+        console.log('BackgroundGeolocation iniciado, id:', watcher_id);
       }).catch(function(e){
-        console.warn('Permiso denegado, fallback:', e);
+        console.warn('BackgroundGeolocation falló, usando fallback:', e);
         startGPSFallback(email);
       });
     } catch(e){
-      console.warn('Capacitor Geolocation no disponible:', e);
+      console.warn('BackgroundGeolocation no disponible:', e);
       startGPSFallback(email);
     }
   } else {
-    // PWA navegador
+    // PWA navegador - sin 2do plano
     startGPSFallback(email);
   }
 }
@@ -2786,14 +2796,14 @@ function cargarEmpleadosActivos(){
   var lista = document.getElementById('listaEmpleados');
   // onSnapshot = escucha cambios en tiempo real
   var hoy = getTodayStr();
-  db.collection('fichajes')
+  // Usar where solo por fecha - sin orderBy para evitar índice requerido
+  db.collection('fichajes').where('fecha','==',hoy)
     .onSnapshot(function(snap){
       var html = '';
-      var totalHoy = 0;
+      var totalHoy = snap.size;
       snap.forEach(function(doc){
         var d = doc.data();
-        if(d.fecha !== hoy) return; // filtrar en cliente
-        totalHoy++;
+        if(!d.email || !d.nombre) return; // ignorar documentos incompletos
         var inicial = (d.nombre||'?')[0].toUpperCase();
         if(d.activo){
           // Poner marcador si tiene coordenadas
@@ -2840,7 +2850,7 @@ function cargarEmpleadosActivos(){
           html += '</div>';
         }
       });
-      if(lista) lista.innerHTML = html || '<div class="no-reporte">Ningún agente ha iniciado jornada hoy ('+hoy+'). Total registros encontrados: '+totalHoy+'</div>';
+      if(lista) lista.innerHTML = html || '<div class="no-reporte">Sin agentes activos hoy. ('+totalHoy+' registros del '+hoy+')</div>';
     }, function(err){
       console.error('Error escuchando fichajes:', err);
     });
