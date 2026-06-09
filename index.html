@@ -2834,9 +2834,11 @@ function cargarEmpleadosActivos(){
                 }
               });
             }
-            // Centrar mapa en este agente inmediatamente
-            mapaInstance.setCenter(pos);
-            mapaInstance.setZoom(14);
+            // Solo centrar la primera vez (cuando no hay marcadores aún)
+            if(Object.keys(marcadoresEmpleados).length === 1){
+              mapaInstance.setCenter(pos);
+              mapaInstance.setZoom(15);
+            }
           }
           html += '<div class="empleado-activo-card">';
           html += '<div class="emp-avatar">'+inicial+'</div>';
