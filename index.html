@@ -1656,6 +1656,12 @@ function cambiarPanel(p){
   window.scrollTo(0,0);
   document.body.scrollTop = 0;
   document.documentElement.scrollTop = 0;
+  // Si se activa el panel de ubicación, hacer resize del mapa
+  if(p === 'fichaje' && mapaInstance){
+    setTimeout(function(){
+      google.maps.event.trigger(mapaInstance, 'resize');
+    }, 200);
+  }
 }
 
 function irACalculo(){ cambiarPanel('calculo'); }
@@ -2504,6 +2510,9 @@ var jornadaActiva = false;
 var jornadaId = null;
 var timerInterval = null;
 var watchId = null;
+var marcadoresEmpleados = {};
+var rutaPolyline = null;
+var mapaInstance = null;
 var jornadaInicio = null;
 var rutaPuntos = [];
 var mapaEmpleado = null;
@@ -2797,8 +2806,7 @@ function cargarEmpleadosActivos(){
                 }
               });
             }
-            mapaInstance.panTo(pos);
-            mapaInstance.setZoom(13);
+            // No hacer panTo por cada agente para no saltar el mapa
           }
           html += '<div class="empleado-activo-card">';
           html += '<div class="emp-avatar">'+inicial+'</div>';
@@ -2820,6 +2828,18 @@ function cargarEmpleadosActivos(){
         }
       });
       if(lista) lista.innerHTML = html || '<div class="no-reporte">Sin agentes activos hoy. ('+totalHoy+' registros del '+hoy+')</div>';
+      // Centrar mapa para ver todos los marcadores
+      var emails = Object.keys(marcadoresEmpleados);
+      if(emails.length > 0 && mapaInstance){
+        var bounds = new google.maps.LatLngBounds();
+        emails.forEach(function(e){ bounds.extend(marcadoresEmpleados[e].getPosition()); });
+        if(emails.length === 1){
+          mapaInstance.setCenter(marcadoresEmpleados[emails[0]].getPosition());
+          mapaInstance.setZoom(15);
+        } else {
+          mapaInstance.fitBounds(bounds);
+        }
+      }
     }, function(err){
       console.error('Error escuchando fichajes:', err);
     });
@@ -3008,45 +3028,77 @@ async function buscarLicenciaCobro(){
   if(dupEl) dupEl.style.display = 'none';
   document.getElementById('cobrosBtnAgregar').style.display = 'none';
 
-  // Usar exactamente el mismo mecanismo que Consultar (CSV_RAW + parseCSV)
   try{
     var allRows = [];
     for(var u=0; u<CSV_RAW.length; u++){
       var text = await fetchCSV(CSV_RAW[u]);
-      if(text){
-        var rows = parseCSV(text);
-        // Debug: ver qué columnas tiene
-        if(rows.length > 0 && u===0){
-          console.log('Columnas CSV:', Object.keys(rows[0]));
-          console.log('Primera fila:', rows[0]);
-        }
-        allRows = allRows.concat(rows);
-      }
+      var rows = parseCSV(text);
+      allRows = allRows.concat(rows);
     }
-    console.log('Total filas:', allRows.length, '| Buscando:', lic);
+
     var found = allRows.filter(function(r){
-      // Buscar por cualquier variante de la columna Id Licencia
-      var keys = Object.keys(r);
-      for(var k=0;k<keys.length;k++){
-        if(keys[k].toLowerCase().indexOf('licencia') > -1){
-          var val = String(r[keys[k]]||'').trim().toUpperCase();
-          if(val === lic) return true;
-        }
-      }
-      return false;
+      return String(r['Id Licencia']||'').trim().toUpperCase() === lic;
     });
-    console.log('Encontradas:', found.length);
+
     if(found.length === 0){
       msgEl.innerText = '⚠️ Licencia no encontrada. Verifica el número.';
       return;
     }
+
+    // Agrupar igual que Consultar
+    var info = found[0];
+    var nombre = info['Establecimiento']||info['Nombre ó Razon Social']||info['Nombre']||'Sin nombre';
+    var ruc = info['Ruc']||info['RUC']||'';
+    var tipo = info['Tipo']||info['Giro']||'';
+
+    // Construir períodos desde cada fila
+    var periodos = [];
+    found.forEach(function(m){
+      var badge = getBadge(m['Status de factura']);
+      if(!badge) return; // saltar filas sin estado
+      var periodo = formatPeriodo(m['Periodo']||'').toUpperCase();
+      var serie = String(m['Serie']||'').trim();
+      var numero = String(m['Numero']||m['Número']||'').trim();
+      var factura = serie && numero ? serie+'-'+numero : serie||numero||'';
+      var status = (m['Status de factura']||'').toUpperCase().trim();
+      var monto = parseFloat((m['Total']||m['Monto']||m['Saldo']||'0').toString().replace(/[^0-9.]/g,''))||0;
+      var estado = (status==='COBRADA'||status==='COBRADO') ? 'COBRADO' : 'PENDIENTE';
+      periodos.push({periodo: periodo, factura: factura, estado: estado, monto: monto});
+    });
+
+    // Ordenar cronológicamente
+    var mesesOrder = {ENE:1,FEB:2,MAR:3,ABR:4,MAY:5,JUN:6,JUL:7,AGO:8,SEP:9,OCT:10,NOV:11,DIC:12};
+    periodos.sort(function(a,b){
+      var pa = a.periodo.split('-'); var pb = b.periodo.split('-');
+      var ya = parseInt(pa[1]||0), yb = parseInt(pb[1]||0);
+      var ma = mesesOrder[pa[0]]||0, mb = mesesOrder[pb[0]]||0;
+      return (ya*100+ma) - (yb*100+mb);
+    });
+
+    if(periodos.length === 0){
+      msgEl.innerText = '⚠️ No hay períodos para esta licencia.';
+      return;
+    }
+
+    var primeraFact = (periodos.find(function(p){return p.estado==='PENDIENTE';})||periodos[0]).factura||'';
+
+    cobrosLicenciaActual = {lic: lic, nombre: nombre, ruc: ruc, factura: primeraFact, tipo: tipo, hoja: 'Sheets'};
+    cobrosPeriodosActual = periodos;
+    cobrosPeriodoSelIdx = -1;
+
+    document.getElementById('crNombre').innerText = nombre;
+    document.getElementById('crSub').innerText = 'RUC: '+ruc+' · Lic: '+lic;
+    document.getElementById('crTag').innerText = tipo||'';
     msgEl.innerText = '';
-    procesarResultadoLicencia(lic, found, 'Sheets');
+    resEl.style.display = 'block';
+    renderPeriodosCobro(periodos, false);
+
   } catch(e){
     console.error('Error buscando licencia:', e);
-    msgEl.innerText = '❌ Error: '+e.message;
+    msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
   }
 }
+
 
 function buscarLicenciaEnFirestore(lic){
   // Si no está en Sheets, no mostramos resultado — solo mensaje
