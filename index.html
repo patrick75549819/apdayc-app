@@ -1657,11 +1657,26 @@ function cambiarPanel(p){
   window.scrollTo(0,0);
   document.body.scrollTop = 0;
   document.documentElement.scrollTop = 0;
-  // Si se activa el panel de ubicación, hacer resize del mapa
-  if(p === 'fichaje' && mapaInstance){
+  // Si se activa el panel de ubicación, reinicializar mapa
+  if(p === 'fichaje'){
     setTimeout(function(){
-      google.maps.event.trigger(mapaInstance, 'resize');
-    }, 200);
+      if(mapaInstance){
+        google.maps.event.trigger(mapaInstance, 'resize');
+        // Re-pintar marcadores existentes
+        var emails = Object.keys(marcadoresEmpleados);
+        if(emails.length > 0){
+          var bounds = new google.maps.LatLngBounds();
+          emails.forEach(function(e){
+            marcadoresEmpleados[e].setMap(mapaInstance);
+            bounds.extend(marcadoresEmpleados[e].getPosition());
+          });
+          emails.length===1 ? mapaInstance.setCenter(marcadoresEmpleados[emails[0]].getPosition()) : mapaInstance.fitBounds(bounds);
+        }
+      } else {
+        // Mapa no existe aún - inicializar ahora que el panel es visible
+        initMapaAdmin();
+      }
+    }, 300);
   }
 }
 
@@ -2760,7 +2775,12 @@ function initMapaAdmin(){
   mapaInstance = new google.maps.Map(mapDiv, {
     zoom: 12,
     center: {lat: -12.0464, lng: -77.0428},
-    mapTypeId: 'roadmap'
+    mapTypeId: 'roadmap',
+    minZoom: 3,
+    maxZoom: 20,
+    zoomControl: true,
+    scrollwheel: true,
+    gestureHandling: 'greedy'
   });
   // Mapa listo - ahora sí cargar agentes
   cargarEmpleadosActivos();
@@ -2789,7 +2809,12 @@ function cargarEmpleadosActivos(){
         if(d.activo){
           // Poner marcador si tiene coordenadas
           if(d.lat && d.lng && mapaInstance){
-            var pos = {lat: parseFloat(d.lat), lng: parseFloat(d.lng)};
+            var lat = parseFloat(d.lat);
+            var lng = parseFloat(d.lng);
+            if(isNaN(lat)||isNaN(lng)) return;
+            var pos = {lat: lat, lng: lng};
+            var dbg3 = document.getElementById('debugGPS');
+            if(dbg3) dbg3.innerText += ' | '+d.nombre+': '+lat.toFixed(4)+','+lng.toFixed(4);
             if(marcadoresEmpleados[d.email]){
               marcadoresEmpleados[d.email].setPosition(pos);
               marcadoresEmpleados[d.email].setMap(mapaInstance);
@@ -2809,7 +2834,9 @@ function cargarEmpleadosActivos(){
                 }
               });
             }
-            // No hacer panTo por cada agente para no saltar el mapa
+            // Centrar mapa en este agente inmediatamente
+            mapaInstance.setCenter(pos);
+            mapaInstance.setZoom(14);
           }
           html += '<div class="empleado-activo-card">';
           html += '<div class="emp-avatar">'+inicial+'</div>';
