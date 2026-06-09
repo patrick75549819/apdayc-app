@@ -3013,12 +3013,29 @@ async function buscarLicenciaCobro(){
     var allRows = [];
     for(var u=0; u<CSV_RAW.length; u++){
       var text = await fetchCSV(CSV_RAW[u]);
-      if(text) allRows = allRows.concat(parseCSV(text));
+      if(text){
+        var rows = parseCSV(text);
+        // Debug: ver qué columnas tiene
+        if(rows.length > 0 && u===0){
+          console.log('Columnas CSV:', Object.keys(rows[0]));
+          console.log('Primera fila:', rows[0]);
+        }
+        allRows = allRows.concat(rows);
+      }
     }
+    console.log('Total filas:', allRows.length, '| Buscando:', lic);
     var found = allRows.filter(function(r){
-      var licCol = String(r['Id Licencia']||'').trim().toUpperCase();
-      return licCol === lic;
+      // Buscar por cualquier variante de la columna Id Licencia
+      var keys = Object.keys(r);
+      for(var k=0;k<keys.length;k++){
+        if(keys[k].toLowerCase().indexOf('licencia') > -1){
+          var val = String(r[keys[k]]||'').trim().toUpperCase();
+          if(val === lic) return true;
+        }
+      }
+      return false;
     });
+    console.log('Encontradas:', found.length);
     if(found.length === 0){
       msgEl.innerText = '⚠️ Licencia no encontrada. Verifica el número.';
       return;
@@ -3027,7 +3044,7 @@ async function buscarLicenciaCobro(){
     procesarResultadoLicencia(lic, found, 'Sheets');
   } catch(e){
     console.error('Error buscando licencia:', e);
-    msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
+    msgEl.innerText = '❌ Error: '+e.message;
   }
 }
 
