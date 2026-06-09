@@ -3005,50 +3005,35 @@ function buscarLicenciaCobro(){
 
   msgEl.innerText = '🔍 Buscando...';
   resEl.style.display = 'none';
-  dupEl.style.display = 'none';
+  if(dupEl) dupEl.style.display = 'none';
   document.getElementById('cobrosBtnAgregar').style.display = 'none';
 
-  // Buscar en ambas hojas de licencias (SURCO/SJL y LIMA/LINCE)
-  var SHEETS = [
-    { nombre: 'SURCO/SJL', url: 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/'+COBROS_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet=SURCO_SJL') },
-    { nombre: 'LIMA/LINCE', url: 'https://corsproxy.io/?' + encodeURIComponent('https://docs.google.com/spreadsheets/d/'+COBROS_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet=LIMA_LINCE') }
-  ];
+  // Usar exactamente el mismo mecanismo que Consultar (CSV_RAW + parseCSV)
+  var promesas = CSV_RAW.map(function(url){ return fetchCSV(url); });
+  Promise.all(promesas).then(function(csvTexts){
+    var allRows = [];
+    csvTexts.forEach(function(text){
+      if(text) allRows = allRows.concat(parseCSV(text));
+    });
 
-  var encontrado = false;
+    var found = allRows.filter(function(r){
+      var licCol = String(r['Id Licencia']||'').trim().toUpperCase();
+      return licCol === lic;
+    });
 
-  function buscarEnSheet(idx){
-    if(idx >= SHEETS.length){
-      if(!encontrado){
-        // Fallback: buscar por Firestore (cobros registrados en la app)
-        buscarLicenciaEnFirestore(lic);
-      }
+    if(found.length === 0){
+      msgEl.innerText = '⚠️ Licencia no encontrada. Verifica el número.';
       return;
     }
-    fetch(SHEETS[idx].url)
-      .then(function(r){ return r.text(); })
-      .then(function(csv){
-        if(encontrado) return;
-        var filas = parseCSV(csv);
-        var fila = null;
-        for(var i=0;i<filas.length;i++){
-          var f = filas[i];
-          var licCol = f['Id Licencia']||f['Licencia']||f['N° Licencia']||f['Nro Licencia']||'';
-          if(licCol.toString().trim().toUpperCase() === lic){
-            fila = f; break;
-          }
-        }
-        if(fila){
-          encontrado = true;
-          procesarResultadoLicencia(lic, fila, SHEETS[idx].nombre);
-        } else {
-          buscarEnSheet(idx+1);
-        }
-      }).catch(function(){
-        buscarEnSheet(idx+1);
-      });
-  }
 
-  buscarEnSheet(0);
+    // Tomar la primera fila como info base
+    var fila = found[0];
+    msgEl.innerText = '';
+    procesarResultadoLicencia(lic, fila, 'Sheets');
+  }).catch(function(e){
+    console.error('Error buscando licencia:', e);
+    msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
+  });
 }
 
 function buscarLicenciaEnFirestore(lic){
