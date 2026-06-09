@@ -31,7 +31,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh;}
 .login-footer{text-align:center;margin-top:16px;font-size:11px;color:#aaa;}
 
 /* MAIN APP */
-#appContent{display:none;width:100%;min-height:100vh;padding-bottom:70px;overflow-x:hidden;}
+#appContent{display:none;width:100%;height:calc(100vh - 60px);overflow-y:auto;overflow-x:hidden;padding-bottom:70px;}
 
 /* TOP HEADER */
 .app-header{background:linear-gradient(135deg,#2f5597 0%,#1e3a6e 100%);padding:16px 20px 20px;color:white;position:relative;}
@@ -50,7 +50,7 @@ body{font-family:Arial,sans-serif;background:#f0f2f5;min-height:100vh;}
 .nav-label{font-size:11px;color:#aaa;margin-top:2px;display:block;}
 
 /* PANELS */
-.panel{display:none;padding:16px 16px 90px 16px;overflow-y:auto;}
+.panel{display:none;padding:16px 16px 90px 16px;}
 .panel.active{display:block;}
 
 /* CARDS */
@@ -604,7 +604,6 @@ select.form-input{cursor:pointer;}
 
   </div>
 
-  </div></div><!-- fix unclosed divs -->
 
 
   <!-- PANEL COBROS -->
@@ -1652,16 +1651,11 @@ function cambiarPanel(p){
   var targetNav = document.getElementById('nav-'+p);
   if(targetPanel) targetPanel.classList.add('active');
   if(targetNav) targetNav.classList.add('active');
-  window.scrollTo({top:0, left:0, behavior:'instant'});
+  var ac = document.getElementById('appContent');
+  if(ac) ac.scrollTop = 0;
+  window.scrollTo(0,0);
   document.body.scrollTop = 0;
   document.documentElement.scrollTop = 0;
-  try{ document.getElementById('appContent').scrollTop = 0; } catch(e){}
-  try{ document.documentElement.scrollTop = 0; document.body.scrollTop = 0; } catch(e){}
-  // Scroll específico del panel activo al tope
-  try{
-    var activePanel = document.getElementById('panel'+p.charAt(0).toUpperCase()+p.slice(1));
-    if(activePanel) activePanel.scrollTop = 0;
-  } catch(e){}
 }
 
 function irACalculo(){ cambiarPanel('calculo'); }
