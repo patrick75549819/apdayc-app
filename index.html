@@ -2529,6 +2529,7 @@ var watchId = null;
 var marcadoresEmpleados = {};
 var rutaPolyline = null;
 var mapaInstance = null;
+var mapaFitDone = false;
 var jornadaInicio = null;
 var rutaPuntos = [];
 var mapaEmpleado = null;
@@ -2772,6 +2773,8 @@ function initMapaAdmin(){
     setTimeout(initMapaAdmin, 500);
     return;
   }
+  mapaFitDone = false;
+  marcadoresEmpleados = {};
   mapaInstance = new google.maps.Map(mapDiv, {
     zoom: 12,
     center: {lat: -12.0464, lng: -77.0428},
@@ -2860,16 +2863,19 @@ function cargarEmpleadosActivos(){
         }
       });
       if(lista) lista.innerHTML = html || '<div class="no-reporte">Sin agentes activos hoy. ('+totalHoy+' registros del '+hoy+')</div>';
-      // Centrar mapa para ver todos los marcadores
-      var emails = Object.keys(marcadoresEmpleados);
-      if(emails.length > 0 && mapaInstance){
-        var bounds = new google.maps.LatLngBounds();
-        emails.forEach(function(e){ bounds.extend(marcadoresEmpleados[e].getPosition()); });
-        if(emails.length === 1){
-          mapaInstance.setCenter(marcadoresEmpleados[emails[0]].getPosition());
-          mapaInstance.setZoom(15);
-        } else {
-          mapaInstance.fitBounds(bounds);
+      // fitBounds solo la primera vez que cargan los marcadores
+      if(!mapaFitDone){
+        var emails = Object.keys(marcadoresEmpleados);
+        if(emails.length > 0 && mapaInstance){
+          var bounds = new google.maps.LatLngBounds();
+          emails.forEach(function(e){ bounds.extend(marcadoresEmpleados[e].getPosition()); });
+          if(emails.length === 1){
+            mapaInstance.setCenter(marcadoresEmpleados[emails[0]].getPosition());
+            mapaInstance.setZoom(15);
+          } else {
+            mapaInstance.fitBounds(bounds);
+          }
+          mapaFitDone = true;
         }
       }
     }, function(err){
