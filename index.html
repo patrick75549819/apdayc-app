@@ -2995,7 +2995,7 @@ function initCobros(email, isAdmin){
 }
 
 // --- PASO 1: Buscar licencia en Google Sheets ---
-function buscarLicenciaCobro(){
+async function buscarLicenciaCobro(){
   var lic = document.getElementById('cobrosLicInput').value.trim().toUpperCase();
   var msgEl = document.getElementById('cobrosSearchMsg');
   var resEl = document.getElementById('cobrosResultado');
@@ -3009,30 +3009,26 @@ function buscarLicenciaCobro(){
   document.getElementById('cobrosBtnAgregar').style.display = 'none';
 
   // Usar exactamente el mismo mecanismo que Consultar (CSV_RAW + parseCSV)
-  var promesas = CSV_RAW.map(function(url){ return fetchCSV(url); });
-  Promise.all(promesas).then(function(csvTexts){
+  try{
     var allRows = [];
-    csvTexts.forEach(function(text){
+    for(var u=0; u<CSV_RAW.length; u++){
+      var text = await fetchCSV(CSV_RAW[u]);
       if(text) allRows = allRows.concat(parseCSV(text));
-    });
-
+    }
     var found = allRows.filter(function(r){
       var licCol = String(r['Id Licencia']||'').trim().toUpperCase();
       return licCol === lic;
     });
-
     if(found.length === 0){
       msgEl.innerText = '⚠️ Licencia no encontrada. Verifica el número.';
       return;
     }
-
-    // Pasar TODAS las filas (una por período) igual que Consultar
     msgEl.innerText = '';
     procesarResultadoLicencia(lic, found, 'Sheets');
-  }).catch(function(e){
+  } catch(e){
     console.error('Error buscando licencia:', e);
     msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
-  });
+  }
 }
 
 function buscarLicenciaEnFirestore(lic){
