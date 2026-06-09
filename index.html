@@ -3026,10 +3026,9 @@ function buscarLicenciaCobro(){
       return;
     }
 
-    // Tomar la primera fila como info base
-    var fila = found[0];
+    // Pasar TODAS las filas (una por período) igual que Consultar
     msgEl.innerText = '';
-    procesarResultadoLicencia(lic, fila, 'Sheets');
+    procesarResultadoLicencia(lic, found, 'Sheets');
   }).catch(function(e){
     console.error('Error buscando licencia:', e);
     msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
@@ -3041,67 +3040,74 @@ function buscarLicenciaEnFirestore(lic){
   document.getElementById('cobrosSearchMsg').innerText = '⚠️ Licencia no encontrada. Verifica el número.';
 }
 
-function procesarResultadoLicencia(lic, fila, hoja){
+function procesarResultadoLicencia(lic, filaORows, hoja){
   var msgEl = document.getElementById('cobrosSearchMsg');
   var resEl = document.getElementById('cobrosResultado');
   var dupEl = document.getElementById('cobroDuplicadoAviso');
 
-  // Extraer campos del Sheets
-  var nombre = fila['Nombre']||fila['Razon Social']||fila['Razón Social']||fila['Local']||'Sin nombre';
-  var ruc = fila['RUC']||fila['Ruc']||'';
-  var factura = fila['N° Factura']||fila['Factura']||fila['Nro Factura']||'';
-  var tipo = fila['Tipo']||fila['Giro']||'';
-  var monto = parseFloat((fila['Monto']||fila['Tarifa']||fila['Importe']||'0').toString().replace(/[^0-9.]/g,''))||0;
-  var estado = (fila['Estado']||'').toString().toUpperCase().trim();
+  // filaORows puede ser una fila o un array de filas (una por periodo)
+  var todasFilas = Array.isArray(filaORows) ? filaORows : [filaORows];
+  var fila = todasFilas[0];
 
-  // Construir períodos desde campos del Sheets
-  // Buscar todas las columnas que sean períodos
+  // Extraer campos base del Sheets
+  var nombre = fila['Nombre ó Razon Social']||fila['Establecimiento']||fila['Nombre']||fila['Razon Social']||fila['Local']||'Sin nombre';
+  var ruc = fila['Ruc']||fila['RUC']||'';
+  var tipo = fila['Tipo']||fila['Giro']||'';
+
+  // Construir períodos desde todas las filas (cada fila = un periodo)
   var periodos = [];
-  Object.keys(fila).forEach(function(col){
-    var c = col.trim().toUpperCase();
-    // Detectar columnas de período: ENE-25, FEB-25, etc o meses
-    var esPeriodo = /^(ENE|FEB|MAR|ABR|MAY|JUN|JUL|AGO|SEP|OCT|NOV|DIC)/.test(c) ||
-                    /^(ENERO|FEBRERO|MARZO|ABRIL|MAYO|JUNIO|JULIO|AGOSTO|SEPTIEMBRE|OCTUBRE|NOVIEMBRE|DICIEMBRE)/.test(c);
-    if(esPeriodo){
-      var val = (fila[col]||'').toString().toUpperCase().trim();
-      periodos.push({
-        periodo: col.trim(),
-        estado: val === 'COBRADA' || val === 'COBRADO' ? 'COBRADO' : 'PENDIENTE',
-        monto: monto,
-        factura: factura
-      });
+  todasFilas.forEach(function(f){
+    var periodo = formatPeriodo(f['Periodo']||'').toUpperCase();
+    var serie = String(f['Serie']||'').trim();
+    var numero = String(f['Numero']||f['Número']||'').trim();
+    var factura = serie && numero ? serie+'-'+numero : serie||numero||'';
+    var status = (f['Status de factura']||f['Estado']||'').toUpperCase().trim();
+    var monto = parseFloat((f['Monto']||f['Tarifa']||f['Importe']||'0').toString().replace(/[^0-9.]/g,''))||0;
+    var estado = (status==='COBRADA'||status==='COBRADO') ? 'COBRADO' : 'PENDIENTE';
+    if(periodo || factura){
+      periodos.push({periodo: periodo, factura: factura, estado: estado, monto: monto});
     }
   });
 
-  // Si no hay columnas de período, crear uno genérico con el estado actual
+  // Si no hay períodos, crear uno genérico
   if(periodos.length === 0){
-    periodos.push({
-      periodo: 'Factura '+factura,
-      estado: (estado === 'COBRADA' || estado === 'COBRADO') ? 'COBRADO' : 'PENDIENTE',
-      monto: monto,
-      factura: factura
-    });
+    var serie0 = String(fila['Serie']||'').trim();
+    var numero0 = String(fila['Numero']||fila['Número']||'').trim();
+    var factura0 = serie0&&numero0 ? serie0+'-'+numero0 : '';
+    periodos.push({periodo: 'Período actual', factura: factura0, estado: 'PENDIENTE', monto: 0});
   }
 
-  cobrosLicenciaActual = {lic: lic, nombre: nombre, ruc: ruc, factura: factura, tipo: tipo, monto: monto, hoja: hoja};
+  // Ordenar períodos cronológicamente
+  var mesesOrder = {ENE:1,FEB:2,MAR:3,ABR:4,MAY:5,JUN:6,JUL:7,AGO:8,SEP:9,OCT:10,NOV:11,DIC:12};
+  periodos.sort(function(a,b){
+    var pa = a.periodo.split('-'); var pb = b.periodo.split('-');
+    var ya = parseInt(pa[1]||0), yb = parseInt(pb[1]||0);
+    var ma = mesesOrder[pa[0]]||0, mb = mesesOrder[pb[0]]||0;
+    return (ya*100+ma) - (yb*100+mb);
+  });
+
+  // Factura para duplicado check = primera pendiente
+  var primeraFact = (periodos.find(function(p){return p.estado==='PENDIENTE';})||periodos[0]||{}).factura||'';
+
+  cobrosLicenciaActual = {lic: lic, nombre: nombre, ruc: ruc, factura: primeraFact, tipo: tipo, hoja: hoja};
   cobrosPeriodosActual = periodos;
   cobrosPeriodoSelIdx = -1;
 
   // Verificar en Firestore si la factura ya fue registrada (tiempo real)
-  verificarDuplicadoTiempoReal(lic, factura, function(duplicado, agente){
+  verificarDuplicadoTiempoReal(lic, primeraFact, function(duplicado, agente){
     if(duplicado){
       dupEl.style.display = 'block';
-      document.getElementById('cobroDuplicadoMsg').innerText = '📋 La factura '+factura+' ya fue subida al sistema' + (agente ? ' por '+agente : '') + '. No se puede volver a registrar.';
+      document.getElementById('cobroDuplicadoMsg').innerText = '📋 La factura '+primeraFact+' ya fue subida al sistema' + (agente ? ' por '+agente : '') + '. No se puede volver a registrar.';
       document.getElementById('crNombre').innerText = nombre;
-      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · '+factura;
+      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · Lic: '+lic;
       document.getElementById('crTag').innerText = tipo || hoja;
-      renderPeriodosCobro(periodos, true); // true = todo bloqueado
+      renderPeriodosCobro(periodos, true);
       resEl.style.display = 'block';
       msgEl.innerText = '';
     } else {
       dupEl.style.display = 'none';
       document.getElementById('crNombre').innerText = nombre;
-      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · '+factura;
+      document.getElementById('crSub').innerText = 'RUC: '+ruc+' · Lic: '+lic;
       document.getElementById('crTag').innerText = tipo || hoja;
       renderPeriodosCobro(periodos, false);
       resEl.style.display = 'block';
@@ -3129,58 +3135,70 @@ function verificarDuplicadoTiempoReal(lic, factura, callback){
 
 function renderPeriodosCobro(periodos, todosBloqueados){
   var container = document.getElementById('cobrosListaPeriodos');
-  var html = '';
-  var primerPendienteEncontrado = false;
+  var db = firebase.firestore();
 
-  periodos.forEach(function(p, idx){
-    var cobrado = p.estado === 'COBRADO';
-    var bloqueado = todosBloqueados || (!cobrado && primerPendienteEncontrado);
+  // Primero verificar en Firestore cuáles facturas ya fueron cobradas
+  var facturas = periodos.map(function(p){ return p.factura; }).filter(Boolean);
+  var facturasYaCobradas = {};
 
-    if(!cobrado && !primerPendienteEncontrado && !todosBloqueados){
-      primerPendienteEncontrado = true;
-      // Este es el primero seleccionable
-    }
-
-    var rowClass = 'cobro-periodo-row';
-    var radioClass = 'cobro-radio';
-
-    if(cobrado || todosBloqueados){
-      rowClass += ' bloqueado';
-      radioClass += ' disabled';
-    } else if(!bloqueado && !cobrado){
-      rowClass += ' seleccionable';
-    } else if(bloqueado){
-      rowClass += ' bloqueado';
-      radioClass += ' disabled';
-    }
-
-    var onclickAttr = (!cobrado && !bloqueado && !todosBloqueados)
-      ? 'onclick="seleccionarPeriodoCobro('+idx+')"'
-      : '';
-
-    html += '<div class="'+rowClass+'" id="cobro-row-'+idx+'" '+onclickAttr+'>';
-    html += '<div class="'+radioClass+'" id="cobro-radio-'+idx+'"></div>';
-    html += '<div class="cobro-periodo-info">';
-    html += '<div class="cobro-periodo-nombre">'+p.periodo+'</div>';
-    html += '<div class="cobro-periodo-fact">'+p.factura+'</div>';
-    html += '</div>';
-    html += '<div class="cobro-periodo-right">';
-    if(cobrado){
-      html += '<span class="cobro-badge-cobrado">Cobrado</span>';
-    } else if(todosBloqueados){
-      html += '<span class="cobro-badge-pendiente">Bloqueado</span>';
-    } else if(bloqueado){
-      html += '<span class="cobro-badge-pendiente">Pendiente</span>';
-      html += '<div class="cobro-periodo-lock">🔒 Pagar anterior primero</div>';
-    } else {
-      html += '<span class="cobro-badge-pendiente">Pendiente</span>';
-      if(p.monto > 0) html += '<div class="cobro-periodo-monto">S/ '+p.monto.toFixed(2)+'</div>';
-    }
-    html += '</div></div>';
+  // Consultar Firestore por cada factura
+  var promesas = facturas.map(function(fact){
+    return db.collection('cobros_registros').where('factura','==',fact).get()
+      .then(function(snap){
+        if(!snap.empty){
+          var d = snap.docs[0].data();
+          facturasYaCobradas[fact] = d.nombreAgente || d.emailAgente || 'otro agente';
+        }
+      }).catch(function(){});
   });
 
-  container.innerHTML = html;
+  Promise.all(promesas).then(function(){
+    var html = '';
+    var primerPendienteLibre = false;
+
+    periodos.forEach(function(p, idx){
+      var cobradoSheets = p.estado === 'COBRADO';
+      var cobradoFirestore = facturasYaCobradas[p.factura];
+      var cobrado = cobradoSheets || !!cobradoFirestore;
+      var bloqueado = todosBloqueados || (cobrado ? false : primerPendienteLibre);
+
+      if(!cobrado && !primerPendienteLibre && !todosBloqueados){
+        primerPendienteLibre = true; // solo el primero libre es seleccionable
+      }
+
+      var seleccionable = !cobrado && !bloqueado && !todosBloqueados;
+      var rowClass = 'cobro-periodo-row' + (cobrado ? ' bloqueado' : bloqueado ? ' bloqueado' : ' seleccionable');
+      var radioClass = 'cobro-radio' + (cobrado || bloqueado ? ' disabled' : '');
+      var onclickAttr = seleccionable ? 'onclick="seleccionarPeriodoCobro('+idx+')"' : '';
+
+      html += '<div class="'+rowClass+'" id="cobro-row-'+idx+'" '+onclickAttr+'>';
+      html += '<div class="'+radioClass+'" id="cobro-radio-'+idx+'"></div>';
+      html += '<div class="cobro-periodo-info">';
+      html += '<div class="cobro-periodo-nombre">'+p.periodo+'</div>';
+      html += '<div class="cobro-periodo-fact">'+(p.factura||'Sin factura')+'</div>';
+      html += '</div>';
+      html += '<div class="cobro-periodo-right">';
+      if(cobradoSheets){
+        html += '<span class="cobro-badge-cobrado">Cobrado</span>';
+      } else if(cobradoFirestore){
+        html += '<span class="cobro-badge-cobrado">Cobrado</span>';
+        html += '<div style="font-size:10px;color:#888;margin-top:2px;">por '+cobradoFirestore+'</div>';
+      } else if(todosBloqueados){
+        html += '<span class="cobro-badge-pendiente">Bloqueado</span>';
+      } else if(bloqueado){
+        html += '<span class="cobro-badge-pendiente">Pendiente</span>';
+        html += '<div class="cobro-periodo-lock">🔒 Pagar anterior primero</div>';
+      } else {
+        html += '<span class="cobro-badge-pendiente">Pendiente</span>';
+        if(p.monto > 0) html += '<div class="cobro-periodo-monto">S/ '+p.monto.toFixed(2)+'</div>';
+      }
+      html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+  });
 }
+
 
 function seleccionarPeriodoCobro(idx){
   // Deseleccionar anterior
