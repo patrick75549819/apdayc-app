@@ -585,6 +585,7 @@ select.form-input{cursor:pointer;}
       <div class="fichaje-card">
         <div style="font-size:14px;font-weight:700;color:#2f5597;margin-bottom:12px;">🗺️ Equipo en tiempo real</div>
         <div id="mapaAdmin"></div>
+        <div id="debugGPS" style="font-size:11px;color:#888;padding:4px;"></div>
         <div id="listaEmpleados"></div>
       </div>
       <div class="fichaje-card">
@@ -2766,17 +2767,19 @@ function initMapaAdmin(){
 }
 
 function cargarEmpleadosActivos(){
+  var dbg = document.getElementById('debugGPS');
   if(!mapaInstance){
+    if(dbg) dbg.innerText = '⏳ Esperando mapa...';
     setTimeout(cargarEmpleadosActivos, 300);
     return;
   }
   var db = firebase.firestore();
   var lista = document.getElementById('listaEmpleados');
-  // onSnapshot = escucha cambios en tiempo real
   var hoy = getTodayStr();
-  // Usar where solo por fecha - sin orderBy para evitar índice requerido
+  if(dbg) dbg.innerText = '🔄 Conectando Firestore... fecha: '+hoy;
   db.collection('fichajes').where('fecha','==',hoy)
     .onSnapshot(function(snap){
+      if(dbg) dbg.innerText = '✅ '+snap.size+' registros hoy ('+hoy+')';
       var html = '';
       var totalHoy = snap.size;
       snap.forEach(function(doc){
@@ -2841,7 +2844,8 @@ function cargarEmpleadosActivos(){
         }
       }
     }, function(err){
-      console.error('Error escuchando fichajes:', err);
+      var dbg2 = document.getElementById('debugGPS');
+      if(dbg2) dbg2.innerText = '❌ Error: '+err.message;
     });
 }
 
