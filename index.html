@@ -3637,16 +3637,29 @@ function descargarCobrosExcel(){
       'Tipo': x.tipo || '',
       'Metodo': x.metodo,
       'Monto': x.monto,
-      'Comprobante': (x.imagenes && x.imagenes.length>0) ? 'SI' : 'NO'
+      'Comprobante': (x.imagenes && x.imagenes.length>0) ? 'Ver foto' : 'Sin foto'
     };
   });
 
   var ws = XLSX.utils.json_to_sheet(rows);
-
   ws['!cols'] = [
     {wch:12}, {wch:14}, {wch:30}, {wch:12}, {wch:14},
     {wch:10}, {wch:14}, {wch:14}, {wch:10}, {wch:12}
   ];
+
+  // Hipervínculos en columna Comprobante (col index 9 = J)
+  for(var i=0; i<_cobrosAdminData.length; i++){
+    var x = _cobrosAdminData[i];
+    if(x.imagenes && x.imagenes.length>0){
+      var img = x.imagenes[0];
+      // Excel limita hipervínculos a ~255 caracteres en algunas versiones,
+      // pero internamente XLSX soporta hasta ~32000. Usamos el límite seguro.
+      if(img.length < 30000){
+        var cellRef = XLSX.utils.encode_cell({r:i+1, c:9});
+        ws[cellRef].l = { Target: img, Tooltip: 'Clic para ver el comprobante' };
+      }
+    }
+  }
 
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Cobros');
@@ -3654,19 +3667,7 @@ function descargarCobrosExcel(){
   var desde = document.getElementById('cobrosAdminFechaDesde').value;
   var hasta = document.getElementById('cobrosAdminFechaHasta').value;
   XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
-
-  // Generar un ZIP con las fotos por separado, nombradas según factura
-  if(typeof JSZip !== 'undefined'){
-    descargarFotosZip(desde, hasta);
-  } else {
-    // Cargar JSZip dinámicamente y luego descargar
-    var script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
-    script.onload = function(){ descargarFotosZip(desde, hasta); };
-    document.head.appendChild(script);
-  }
 }
-
 function descargarFotosZip(desde, hasta){
   var conFotos = _cobrosAdminData.filter(function(x){ return x.imagenes && x.imagenes.length>0; });
   if(conFotos.length === 0) return;
