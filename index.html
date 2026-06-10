@@ -3675,7 +3675,15 @@ function descargarCobrosDashboard(){
   });
 
   var filas = _cobrosAdminData.map(function(x){
-    return '<tr><td>'+x.fecha+'</td><td>'+x.nombreAgente+'</td><td>'+x.nombreLocal+'</td><td>'+x.ruc+'</td><td>'+x.factura+'</td><td>'+x.periodo+'</td><td>'+x.metodo+'</td><td><b>S/ '+x.monto.toFixed(2)+'</b></td></tr>';
+    var fotosHtml = '';
+    if(x.imagenes && x.imagenes.length>0){
+      x.imagenes.forEach(function(img){
+        fotosHtml += '<a href="'+img+'" target="_blank"><img src="'+img+'" class="comprobante-thumb"></a>';
+      });
+    } else {
+      fotosHtml = '<span style="color:#bbb;font-size:11px;">Sin foto</span>';
+    }
+    return '<tr><td>'+x.fecha+'</td><td>'+x.nombreAgente+'</td><td>'+x.nombreLocal+'</td><td>'+x.ruc+'</td><td>'+x.factura+'</td><td>'+x.periodo+'</td><td>'+x.metodo+'</td><td><b>S/ '+x.monto.toFixed(2)+'</b></td><td>'+fotosHtml+'</td></tr>';
   }).join('');
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Cobros '+desde+' - '+hasta+'</title>';
@@ -3688,7 +3696,8 @@ function descargarCobrosDashboard(){
   html += '.section h2{font-size:15px;color:#2f5597;margin:0 0 16px;}';
   html += 'table{width:100%;border-collapse:collapse;font-size:12px;} th{background:#2f5597;color:white;padding:8px;text-align:left;}';
   html += 'td{padding:7px 8px;border-bottom:1px solid #f0f0f0;}  tr:hover{background:#f8faff;}';
-  html += '@media print{body{padding:12px;}}';
+  html += '.comprobante-thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;margin-right:4px;cursor:pointer;}';
+  html += '@media print{body{padding:12px;} .comprobante-thumb{width:32px;height:32px;}}';
   html += '</style></head><body>';
   html += '<h1>📊 Reporte de Cobros — GCI Servicios Financieros</h1>';
   html += '<div class="sub">Período: '+desde+' al '+hasta+' · Generado: '+new Date().toLocaleDateString('es-PE')+'</div>';
@@ -3699,7 +3708,7 @@ function descargarCobrosDashboard(){
   html += '</div>';
   html += '<div class="section"><h2>📈 Avance por Agente</h2>'+barrasAgentes+'</div>';
   html += '<div class="section"><h2>📋 Detalle de Cobros</h2>';
-  html += '<table><thead><tr><th>Fecha</th><th>Agente</th><th>Local</th><th>RUC</th><th>Factura</th><th>Período</th><th>Método</th><th>Monto</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+  html += '<table><thead><tr><th>Fecha</th><th>Agente</th><th>Local</th><th>RUC</th><th>Factura</th><th>Período</th><th>Método</th><th>Monto</th><th>Comprobante</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
   html += '</body></html>';
 
   var blob = new Blob([html], {type:'text/html;charset=utf-8;'});
