@@ -277,6 +277,7 @@ select.form-input{cursor:pointer;}
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB2UXrVHW3lga-SeaTo9z9htZ169PDPPYQ&libraries=geometry&callback=onMapsLoaded" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -3624,22 +3625,52 @@ function descargarCobrosExcel(){
     if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
     return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
   });
-  var csv = 'Fecha;Agente;Local;RUC;Factura;Periodo;Tipo;Metodo;Monto\n';
-  _cobrosAdminData.forEach(function(x){
-    csv += [x.fecha, x.nombreAgente, '"'+(x.nombreLocal||'').replace(/"/g,"''")+'"', x.ruc, x.factura, x.periodo, x.tipo, x.metodo, x.monto.toFixed(2).replace('.',',')].join(';')+'\n';
-  });
-  var BOM = '\uFEFF'; // BOM para que Excel reconozca UTF-8 y acentos
-  var blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8;'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'Cobros_GCI_'+document.getElementById('cobrosAdminFechaDesde').value+'_al_'+document.getElementById('cobrosAdminFechaHasta').value+'.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
-}
 
+  // Construir filas de datos
+  var rows = _cobrosAdminData.map(function(x){
+    return {
+      'Fecha': x.fecha,
+      'Agente': x.nombreAgente,
+      'Local': x.nombreLocal,
+      'RUC': x.ruc,
+      'Factura': x.factura,
+      'Periodo': x.periodo,
+      'Tipo': x.tipo,
+      'Metodo': x.metodo,
+      'Monto': x.monto,
+      'Comprobante': (x.imagenes && x.imagenes.length>0) ? 'Ver foto '+(x.imagenes.length>1?'(1 de '+x.imagenes.length+')':'') : 'Sin foto'
+    };
+  });
+
+  var ws = XLSX.utils.json_to_sheet(rows);
+
+  // Agregar hipervínculos en la columna Comprobante (columna J = índice 9)
+  var range = XLSX.utils.decode_range(ws['!ref']);
+  for(var r = 1; r <= range.e.r; r++){
+    var dataIdx = r - 1;
+    var x = _cobrosAdminData[dataIdx];
+    if(x && x.imagenes && x.imagenes.length>0){
+      var cellRef = XLSX.utils.encode_cell({r:r, c:9});
+      if(ws[cellRef]){
+        ws[cellRef].l = { Target: x.imagenes[0], Tooltip: 'Ver comprobante de pago' };
+        ws[cellRef].s = { font: { color: { rgb: '2563EB' }, underline: true } };
+      }
+    }
+  }
+
+  // Anchos de columna
+  ws['!cols'] = [
+    {wch:12}, {wch:14}, {wch:30}, {wch:12}, {wch:14},
+    {wch:10}, {wch:14}, {wch:14}, {wch:10}, {wch:18}
+  ];
+
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Cobros');
+
+  var desde = document.getElementById('cobrosAdminFechaDesde').value;
+  var hasta = document.getElementById('cobrosAdminFechaHasta').value;
+  XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
+}
 // --- Descargar Excel con Dashboard HTML ---
 function descargarCobrosDashboard(){
   if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
