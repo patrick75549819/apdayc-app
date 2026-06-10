@@ -438,6 +438,7 @@ select.form-input{cursor:pointer;}
       <div class="form-label">Tipo de Pago</div>
       <select class="form-input" id="tipoPago">
         <option value="mensual">Mensual</option>
+        <option value="semestral5">Semestral (6 meses - 5% descuento)</option>
         <option value="anual11">Anual (12 meses - 11% descuento)</option>
         <option value="anual13">Anual (12 meses - 13% descuento)</option>
         <option value="membresia11">Membresía + Anual 11%</option>
@@ -794,7 +795,7 @@ const sec = [
 "Banco","Notaría","Instituciones educativas","Centro comercial",
 "Escenarios deportivos","Escenarios culturales","Otros"
 ];
-const ind = ["Restaurante/Bar","Bar/Discoteca","Academias de baile","Cantina","Tragamonedas"];
+const ind = ["Restaurante/Bar","Bar/Discoteca","Academias de baile","Cantina","Tragamonedas","Otros"];
 function cargarGiros(){
 let lista = tipo.value=="secundaria"?sec:ind;
 giro.innerHTML="";
@@ -935,7 +936,9 @@ totalFinal=aforo60*entrada*diasMes*factor;
 }
 var tipoPagoVal = document.getElementById('tipoPago').value;
 var mensualBase = totalFinal;
-if(tipoPagoVal === 'anual11'){
+if(tipoPagoVal === 'semestral5'){
+  totalFinal = mensualBase * 6 * 0.95;
+} else if(tipoPagoVal === 'anual11'){
   totalFinal = mensualBase * 12 * 0.89;
 } else if(tipoPagoVal === 'anual13'){
   totalFinal = mensualBase * 12 * 0.87;
@@ -3617,11 +3620,16 @@ function cargarCobrosAdmin(){
 // --- Descargar Excel simple ---
 function descargarCobrosExcel(){
   if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
-  var csv = 'Fecha,Agente,Local,RUC,Factura,Período,Tipo,Método,Monto\n';
-  _cobrosAdminData.forEach(function(x){
-    csv += [x.fecha, x.nombreAgente, '"'+(x.nombreLocal||'').replace(/"/g,"''")+'"', x.ruc, x.factura, x.periodo, x.tipo, x.metodo, x.monto.toFixed(2)].join(',')+'\n';
+  _cobrosAdminData.sort(function(a,b){
+    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
   });
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var csv = 'Fecha;Agente;Local;RUC;Factura;Periodo;Tipo;Metodo;Monto\n';
+  _cobrosAdminData.forEach(function(x){
+    csv += [x.fecha, x.nombreAgente, '"'+(x.nombreLocal||'').replace(/"/g,"''")+'"', x.ruc, x.factura, x.periodo, x.tipo, x.metodo, x.monto.toFixed(2).replace('.',',')].join(';')+'\n';
+  });
+  var BOM = '\uFEFF'; // BOM para que Excel reconozca UTF-8 y acentos
+  var blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8;'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
@@ -3635,6 +3643,11 @@ function descargarCobrosExcel(){
 // --- Descargar Excel con Dashboard HTML ---
 function descargarCobrosDashboard(){
   if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
+  // Ordenar por fecha y luego por agente
+  _cobrosAdminData.sort(function(a,b){
+    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
+    return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
+  });
   var desde = document.getElementById('cobrosAdminFechaDesde').value;
   var hasta = document.getElementById('cobrosAdminFechaHasta').value;
   var total = _cobrosAdminData.reduce(function(s,x){ return s+x.monto; },0);
