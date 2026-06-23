@@ -1859,7 +1859,7 @@ window.onload=function(){
 var ADMINS = ["psara@gciperu.com","ccabelloc@gciperu.com","ptorres@gciperu.com","jessicah@gciperu.com","herberta@gciperu.com","mfranco@gciperu.com","hsalazar@gciperu.com"];
 var ADMINS_CON_RUTA = ["ptorres@gciperu.com","hsalazar@gciperu.com"]; // Admins que tambien fichan
 var ADMINS_SIN_RUTA = ["psara@gciperu.com","ccabelloc@gciperu.com","jessicah@gciperu.com","herberta@gciperu.com","mfranco@gciperu.com"]; // Solo ven mapa
-var USUARIOS = {"psara@gciperu.com": "Patrick", "ecalderon@gciperu.com": "Ernesto", "rvasquez@gciperu.com": "Ronald", "ptorres@gciperu.com": "Pedro", "rdiaz@gciperu.com": "Ruben", "mherrera@gciperu.com": "Martin", "jhuaman@gciperu.com": "Juan", "jleon@gciperu.com": "Jhony", "gynga@gciperu.com": "Gabriela", "hsalazar@gciperu.com": "Harry", "ccabelloc@gciperu.com": "Christian", "herberta@gciperu.com": "Herbert", "mfranco@gciperu.com": "Mayra", "rperez@gciperu.com": "Richard", "mangel@gciperu.com": "Miguel", "jessicah@gciperu.com": "Jessica"};
+var USUARIOS = {"psara@gciperu.com": "Patrick", "ecalderon@gciperu.com": "Ernesto", "rvasquez@gciperu.com": "Ronald", "ptorres@gciperu.com": "Pedro", "rdiaz@gciperu.com": "Ruben", "mherrera@gciperu.com": "Martin", "jhuaman@gciperu.com": "Juan", "jleon@gciperu.com": "Jhony", "gynga@gciperu.com": "Gabriela", "hsalazar@gciperu.com": "Harry", "ccabelloc@gciperu.com": "Christian", "herberta@gciperu.com": "Herbert", "mfranco@gciperu.com": "Mayra",  "mangel@gciperu.com": "Miguel", "jessicah@gciperu.com": "Jessica"};
 var auth;
 function togglePass(){
   var input=document.getElementById('loginPass');
@@ -3029,7 +3029,9 @@ var cobrosLicenciaActual = null;  // datos del local buscado
 var cobrosPeriodosActual = [];    // períodos del local buscado
 var cobrosPeriodoSelIdx = -1;     // índice seleccionado
 var cobrosListenerActivo = null;  // listener Firestore para duplicados
-var cobrosImagenes = [];          // base64 de fotos adjuntas
+var cobrosImagenes = [];
+  cobrosImagenesPreview = [];
+var cobrosImagenesPreview = [];          // base64 de fotos adjuntas
 
 // --- Inicialización por rol ---
 function initCobros(email, isAdmin){
@@ -3433,29 +3435,66 @@ function selMetodo(m){
   });
 }
 
+function comprimirImagen(dataUrl, callback){
+  var img = new Image();
+  img.onload = function(){
+    var maxDim = 800;
+    var w = img.width, h = img.height;
+    if(w > maxDim || h > maxDim){
+      if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+      else { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', 0.6));
+  };
+  img.src = dataUrl;
+}
+
+function subirFotoImgur(dataUrl, callback){
+  // Subir a Imgur (gratis, sin registro) y obtener URL https://
+  try {
+    var base64Data = dataUrl.split(',')[1];
+    var formData = new FormData();
+    formData.append('image', base64Data);
+    formData.append('type', 'base64');
+    fetch('https://api.imgur.com/3/image', {
+      method: 'POST',
+      headers: { 'Authorization': 'Client-ID 546c25a59c58ad7' },
+      body: formData
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.success && data.data && data.data.link){
+        callback(data.data.link, dataUrl); // URL https://i.imgur.com/... + base64 para preview
+      } else {
+        console.warn('Imgur no devolvió link, usando base64');
+        callback(dataUrl, dataUrl);
+      }
+    })
+    .catch(function(e){
+      console.warn('Error subiendo a Imgur, usando base64:', e);
+      callback(dataUrl, dataUrl);
+    });
+  } catch(e){
+    console.warn('Error en subirFotoImgur:', e);
+    callback(dataUrl, dataUrl);
+  }
+}
+
 function agregarFotos(files){
   Array.from(files).forEach(function(file){
     var reader = new FileReader();
     reader.onload = function(e){
-      // Comprimir imagen para que el base64 sea pequeño (link de Excel + Firestore)
-      var img = new Image();
-      img.onload = function(){
-        var maxDim = 800; // máximo ancho/alto
-        var w = img.width, h = img.height;
-        if(w > maxDim || h > maxDim){
-          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
-          else { w = Math.round(w * maxDim / h); h = maxDim; }
-        }
-        var canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
-        var compressed = canvas.toDataURL('image/jpeg', 0.6); // calidad 60%
-        cobrosImagenes.push(compressed);
-        renderFotoPreview();
-      };
-      img.src = e.target.result;
+      comprimirImagen(e.target.result, function(compressed){
+        subirFotoImgur(compressed, function(urlFinal, preview){
+          cobrosImagenes.push(urlFinal); // URL https:// o base64 como fallback
+          cobrosImagenesPreview = cobrosImagenesPreview || [];
+          cobrosImagenesPreview.push(preview); // base64 para preview local
+          renderFotoPreview();
+        });
+      });
     };
     reader.readAsDataURL(file);
   });
@@ -3464,11 +3503,17 @@ function agregarFotos(files){
 function renderFotoPreview(){
   var preview = document.getElementById('cobrosFotoPreview');
   var html = '';
-  cobrosImagenes.forEach(function(img, i){
+  var previewSrcs = (cobrosImagenesPreview && cobrosImagenesPreview.length > 0) ? cobrosImagenesPreview : cobrosImagenes;
+  previewSrcs.forEach(function(img, i){
     html += '<div style="position:relative;display:inline-block;">';
     html += '<img src="'+img+'" class="cobro-foto-thumb">';
     html += '<button onclick="eliminarFoto('+i+')" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:white;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;padding:0;line-height:18px;">×</button>';
     html += '</div>';
+    if(cobrosImagenes[i] && cobrosImagenes[i].startsWith('https://')){
+      html += '<div style="font-size:10px;color:#16a34a;margin-top:2px;text-align:center;">✅ Subida</div>';
+    } else {
+      html += '<div style="font-size:10px;color:#f59e0b;margin-top:2px;text-align:center;">⏳ Subiendo...</div>';
+    }
   });
   preview.innerHTML = html;
 }
@@ -3554,6 +3599,7 @@ function enviarCobros(){
     // Limpiar todo
     cobrosCarrito = [];
     cobrosImagenes = [];
+  cobrosImagenesPreview = [];
     cobrosMetodoActual = 'efectivo';
     actualizarCarritoPreview();
     renderFotoPreview();
@@ -3685,17 +3731,16 @@ function descargarCobrosExcel(){
     {wch:10}, {wch:14}, {wch:14}, {wch:10}, {wch:12}
   ];
 
-  // Hipervínculos en columna Comprobante (col index 9 = J)
+  // Hipervínculos en columna Comprobante (col 9 = J), filas empiezan en r=1 (fila 2 de Excel)
   for(var i=0; i<_cobrosAdminData.length; i++){
     var x = _cobrosAdminData[i];
-    if(x.imagenes && x.imagenes.length>0){
-      var img = x.imagenes[0];
-      // Excel limita hipervínculos a ~255 caracteres en algunas versiones,
-      // pero internamente XLSX soporta hasta ~32000. Usamos el límite seguro.
-      if(img.length < 30000){
-        var cellRef = XLSX.utils.encode_cell({r:i+1, c:9});
-        ws[cellRef].l = { Target: img, Tooltip: 'Clic para ver el comprobante' };
-      }
+    if(x.imagenes && x.imagenes.length>0 && x.imagenes[0].length < 30000){
+      var cellRef = XLSX.utils.encode_cell({r:i+1, c:9});
+      ws[cellRef] = {
+        t: 's',
+        v: 'Ver foto',
+        l: { Target: x.imagenes[0] }
+      };
     }
   }
 
@@ -3704,9 +3749,8 @@ function descargarCobrosExcel(){
 
   var desde = document.getElementById('cobrosAdminFechaDesde').value;
   var hasta = document.getElementById('cobrosAdminFechaHasta').value;
-  XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx', {cellStyles: true});
-}
-function descargarFotosZip(desde, hasta){
+  XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
+}function descargarFotosZip(desde, hasta){
   var conFotos = _cobrosAdminData.filter(function(x){ return x.imagenes && x.imagenes.length>0; });
   if(conFotos.length === 0) return;
 
