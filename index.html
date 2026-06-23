@@ -1276,15 +1276,25 @@ async function fetchCSV(url){
     var r = await fetch(url, {mode:'cors'});
     if(r.ok) return await r.text();
   }catch(e){}
-  // Try proxy 1
+  // Proxy 1
   try{
     var r2 = await fetch('https://corsproxy.io/?'+encodeURIComponent(url));
     if(r2.ok) return await r2.text();
   }catch(e){}
-  // Try proxy 2
+  // Proxy 2
   try{
     var r3 = await fetch('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url));
     if(r3.ok) return await r3.text();
+  }catch(e){}
+  // Proxy 3
+  try{
+    var r4 = await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url));
+    if(r4.ok) return await r4.text();
+  }catch(e){}
+  // Proxy 4
+  try{
+    var r5 = await fetch('https://thingproxy.freeboard.io/fetch/'+url);
+    if(r5.ok) return await r5.text();
   }catch(e){}
   throw new Error('No se pudo cargar el archivo');
 }
@@ -3140,7 +3150,7 @@ async function buscarLicenciaCobro(){
 
   } catch(e){
     console.error('Error buscando licencia:', e);
-    msgEl.innerText = '❌ Error al buscar. Verifica tu conexión.';
+    msgEl.innerText = '❌ Error: '+e.message;
   }
 }
 
