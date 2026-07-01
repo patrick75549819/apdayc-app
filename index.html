@@ -3537,7 +3537,7 @@ function enviarCobros(){
   if(cobrosCarrito.length === 0){ alert('No hay cobros en el carrito.'); return; }
   var msg = document.getElementById('cobrosEnvioMsg');
   msg.style.color = '#2f5597';
-  msg.innerText = '⏳ Subiendo fotos...';
+  msg.innerText = '⏳ Registrando cobros...';
 
   var db = firebase.firestore();
   var email = currentUserEmail;
@@ -3546,24 +3546,11 @@ function enviarCobros(){
   var total = cobrosCarrito.reduce(function(s,x){ return s+x.monto; }, 0);
   var timestamp = new Date().toISOString();
 
-  // Subir fotos a Firebase Storage primero, obtener URLs públicas
-  var storage = firebase.storage();
-  var subidaFotos = cobrosImagenes.map(function(base64img, idx){
-    var match = base64img.match(/^data:image\/(\w+);base64,(.+)$/);
-    if(!match) return Promise.resolve(null);
-    var ext = match[1];
-    var nombreArchivo = 'cobros/'+fecha+'/'+email.split('@')[0]+'_'+Date.now()+'_'+idx+'.'+ext;
-    var ref = storage.ref().child(nombreArchivo);
-    return ref.putString(base64img, 'data_url').then(function(){
-      return ref.getDownloadURL();
-    }).catch(function(e){
-      console.error('Error subiendo foto:', e);
-      return null;
-    });
-  });
+  // Las fotos ya están en cobrosImagenes como URLs de Imgur (https://) o base64
+  // No necesitamos subir nada más
+  var urlsValidas = cobrosImagenes.filter(Boolean);
 
-  Promise.all(subidaFotos).then(function(urls){
-    var urlsValidas = urls.filter(Boolean);
+  Promise.resolve(urlsValidas).then(function(urls){
     msg.innerText = '⏳ Registrando cobros...';
 
     // Guardar cada cobro como documento individual en cobros_registros
