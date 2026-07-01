@@ -3630,7 +3630,7 @@ function cargarCobrosAdmin(){
   resumen.innerHTML = '';
 
   var db = firebase.firestore();
-  var query = db.collection('cobros_registros')
+  var query = db.collection('cobros_lotes')
     .where('fecha','>=',desde)
     .where('fecha','<=',hasta);
 
@@ -3640,7 +3640,6 @@ function cargarCobrosAdmin(){
     var items = [];
     snap.forEach(function(doc){ items.push(doc.data()); });
 
-    // Filtrar por agente si aplica
     if(agenteF){ items = items.filter(function(x){ return x.emailAgente === agenteF; }); }
     items.sort(function(a,b){ return b.timestamp.localeCompare(a.timestamp); });
 
@@ -3672,20 +3671,27 @@ function cargarCobrosAdmin(){
     resHtml += '</div></div>';
     resumen.innerHTML = resHtml;
 
-    // Lista detallada
+    // Lista detallada - un card por lote
     var html = '';
     items.forEach(function(x){
       html += '<div class="cobro-rep-card">';
       html += '<div class="cobro-rep-user">👤 '+x.nombreAgente+' <span style="font-size:10px;color:#aaa;">'+x.fecha+'</span></div>';
-      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Local</span><span class="cobro-rep-val">'+x.nombreLocal+'</span></div>';
-      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">RUC</span><span class="cobro-rep-val">'+x.ruc+'</span></div>';
-      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Factura</span><span class="cobro-rep-val">'+x.factura+'</span></div>';
-      html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Período</span><span class="cobro-rep-val">'+x.periodo+'</span></div>';
       html += '<div class="cobro-rep-row"><span class="cobro-rep-label">Método</span><span class="cobro-rep-val">'+x.metodo+'</span></div>';
-      html += '<div class="cobro-rep-row" style="font-weight:700;"><span class="cobro-rep-label">Monto</span><span style="color:#2f5597;">S/ '+x.monto.toFixed(2)+'</span></div>';
+      html += '<div class="cobro-rep-row" style="font-weight:700;"><span class="cobro-rep-label">Total</span><span style="color:#2f5597;">S/ '+(x.totalMonto||0).toFixed(2)+'</span></div>';
+      // Mostrar cada licencia del lote
+      if(x.items && x.items.length>0){
+        html += '<div style="margin-top:8px;border-top:1px solid #e5e7eb;padding-top:8px;">';
+        x.items.forEach(function(it){
+          html += '<div style="background:#f8fafc;border-radius:8px;padding:8px;margin-bottom:6px;">';
+          html += '<div style="font-size:12px;font-weight:700;color:#1a1a2e;">'+( it.nombre||it.nombreLocal||'')+'</div>';
+          html += '<div style="font-size:11px;color:#888;">'+it.factura+(it.ruc?' ('+it.ruc+')':'')+' · '+it.periodo+' · <b style="color:#2f5597;">S/ '+it.monto.toFixed(2)+'</b></div>';
+          html += '</div>';
+        });
+        html += '</div>';
+      }
       if(x.imagenes && x.imagenes.length>0){
         html += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">';
-        x.imagenes.forEach(function(img,i){
+        x.imagenes.forEach(function(img){
           html += '<a href="'+img+'" target="_blank"><img src="'+img+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;"></a>';
         });
         html += '</div>';
@@ -3701,160 +3707,74 @@ function cargarCobrosAdmin(){
 
 // --- Descargar Excel simple ---
 function descargarCobrosExcel(){
-  if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
-  _cobrosAdminData.sort(function(a,b){
-    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
-  });
-
-  var rows = _cobrosAdminData.map(function(x){
-    return {
-      'Fecha': x.fecha,
-      'Agente': x.nombreAgente,
-      'Local': x.nombreLocal,
-      'RUC': x.ruc,
-      'Factura': x.factura,
-      'Periodo': x.periodo,
-      'Tipo': x.tipo || '',
-      'Metodo': x.metodo,
-      'Monto': x.monto,
-      'Comprobante': (x.imagenes && x.imagenes.length>0) ? 'Ver foto' : 'Sin foto'
-    };
-  });
-
-  var ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [
-    {wch:12}, {wch:14}, {wch:30}, {wch:12}, {wch:14},
-    {wch:10}, {wch:14}, {wch:14}, {wch:10}, {wch:12}
-  ];
-
-  // Hipervínculos en columna Comprobante (col 9 = J), filas empiezan en r=1 (fila 2 de Excel)
-  for(var i=0; i<_cobrosAdminData.length; i++){
-    var x = _cobrosAdminData[i];
-    if(x.imagenes && x.imagenes.length>0 && x.imagenes[0].length < 30000){
-      var cellRef = XLSX.utils.encode_cell({r:i+1, c:9});
-      ws[cellRef] = {
-        t: 's',
-        v: 'Ver foto',
-        l: { Target: x.imagenes[0] }
-      };
-    }
-  }
-
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Cobros');
-
   var desde = document.getElementById('cobrosAdminFechaDesde').value;
   var hasta = document.getElementById('cobrosAdminFechaHasta').value;
-  XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
-}function descargarFotosZip(desde, hasta){
-  var conFotos = _cobrosAdminData.filter(function(x){ return x.imagenes && x.imagenes.length>0; });
-  if(conFotos.length === 0) return;
+  var agenteF = document.getElementById('cobrosAdminFiltroAgente').value;
 
-  var zip = new JSZip();
-  conFotos.forEach(function(x, idx){
-    x.imagenes.forEach(function(img, j){
-      var match = img.match(/^data:image\/(\w+);base64,(.+)$/);
-      if(!match) return;
-      var ext = match[1];
-      var base64Data = match[2];
-      var nombreArchivo = (x.factura||('cobro'+idx)).replace(/[^a-zA-Z0-9-_]/g,'_') + (j>0?'_'+(j+1):'') + '.' + ext;
-      zip.file(nombreArchivo, base64Data, {base64: true});
+  if(!desde||!hasta){ alert('Selecciona rango de fechas primero.'); return; }
+
+  var db = firebase.firestore();
+  var query = db.collection('cobros_lotes')
+    .where('fecha','>=',desde)
+    .where('fecha','<=',hasta);
+
+  query.get().then(function(snap){
+    if(snap.empty){ alert('No hay cobros en ese período.'); return; }
+
+    var lotes = [];
+    snap.forEach(function(doc){ lotes.push(doc.data()); });
+    if(agenteF) lotes = lotes.filter(function(x){ return x.emailAgente === agenteF; });
+    lotes.sort(function(a,b){
+      if(a.fecha!==b.fecha) return a.fecha.localeCompare(b.fecha);
+      return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
     });
-  });
 
-  zip.generateAsync({type:'blob'}).then(function(blob){
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'Comprobantes_GCI_'+desde+'_al_'+hasta+'.zip';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
-  });
-}// --- Descargar Excel con Dashboard HTML ---
-function descargarCobrosDashboard(){
-  if(!_cobrosAdminData||_cobrosAdminData.length===0){ alert('Primero carga los cobros.'); return; }
-  // Ordenar por fecha y luego por agente
-  _cobrosAdminData.sort(function(a,b){
-    if(a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return (a.nombreAgente||'').localeCompare(b.nombreAgente||'');
-  });
-  var desde = document.getElementById('cobrosAdminFechaDesde').value;
-  var hasta = document.getElementById('cobrosAdminFechaHasta').value;
-  var total = _cobrosAdminData.reduce(function(s,x){ return s+x.monto; },0);
+    var rows = [];
+    lotes.forEach(function(lote){
+      // Agrupar todas las licencias del lote en una sola fila
+      var locales = (lote.items||[]).map(function(it){ return it.nombre||it.nombreLocal||''; }).join(' | ');
+      var facturas = (lote.items||[]).map(function(it){ return (it.factura||'')+(it.ruc?' ('+it.ruc+')':''); }).join(' | ');
+      var periodos = (lote.items||[]).map(function(it){ return it.periodo||''; }).join(' | ');
+      var rucs = (lote.items||[]).map(function(it){ return it.ruc||''; }).join(' | ');
+      var tipos = (lote.items||[]).map(function(it){ return it.tipo||''; }).join(' | ');
 
-  var porAgente = {};
-  var porMetodo = {};
-  _cobrosAdminData.forEach(function(x){
-    if(!porAgente[x.nombreAgente]) porAgente[x.nombreAgente]={total:0,cant:0};
-    porAgente[x.nombreAgente].total += x.monto;
-    porAgente[x.nombreAgente].cant += 1;
-    if(!porMetodo[x.metodo]) porMetodo[x.metodo]={total:0,cant:0};
-    porMetodo[x.metodo].total += x.monto;
-    porMetodo[x.metodo].cant += 1;
-  });
-
-  var barrasAgentes = '';
-  Object.keys(porAgente).sort(function(a,b){ return porAgente[b].total-porAgente[a].total; }).forEach(function(ag){
-    var pct = total>0?Math.round(porAgente[ag].total/total*100):0;
-    barrasAgentes += '<div style="margin-bottom:12px;">';
-    barrasAgentes += '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:4px;">';
-    barrasAgentes += '<span>'+ag+'</span><span>S/ '+porAgente[ag].total.toFixed(2)+' ('+pct+'%)</span></div>';
-    barrasAgentes += '<div style="background:#e5e7eb;border-radius:10px;height:10px;">';
-    barrasAgentes += '<div style="background:#2f5597;width:'+pct+'%;height:100%;border-radius:10px;"></div></div>';
-    barrasAgentes += '</div>';
-  });
-
-  var filas = _cobrosAdminData.map(function(x){
-    var fotosHtml = '';
-    if(x.imagenes && x.imagenes.length>0){
-      x.imagenes.forEach(function(img){
-        fotosHtml += '<a href="'+img+'" target="_blank"><img src="'+img+'" class="comprobante-thumb"></a>';
+      rows.push({
+        'Fecha': lote.fecha,
+        'Agente': lote.nombreAgente,
+        'Local(es)': locales,
+        'RUC(s)': rucs,
+        'Factura(s)': facturas,
+        'Periodo(s)': periodos,
+        'Tipo(s)': tipos,
+        'Metodo': lote.metodo,
+        'Total': lote.totalMonto,
+        'Cant. Licencias': lote.cantItems||1,
+        'Comprobante': (lote.imagenes && lote.imagenes.length>0 && lote.imagenes[0].startsWith('http')) ? 'Ver foto' : (lote.imagenes && lote.imagenes.length>0 ? 'Ver foto' : 'Sin foto')
       });
-    } else {
-      fotosHtml = '<span style="color:#bbb;font-size:11px;">Sin foto</span>';
+    });
+
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      {wch:12},{wch:14},{wch:40},{wch:20},{wch:20},
+      {wch:16},{wch:16},{wch:14},{wch:10},{wch:14},{wch:12}
+    ];
+
+    // Hipervínculos en columna Comprobante (col 10 = K)
+    for(var i=0; i<lotes.length; i++){
+      var lote = lotes[i];
+      if(lote.imagenes && lote.imagenes.length>0 && lote.imagenes[0].startsWith('http')){
+        var cellRef = XLSX.utils.encode_cell({r:i+1, c:10});
+        ws[cellRef] = { t:'s', v:'Ver foto', l:{ Target: lote.imagenes[0] } };
+      }
     }
-    return '<tr><td>'+x.fecha+'</td><td>'+x.nombreAgente+'</td><td>'+x.nombreLocal+'</td><td>'+x.ruc+'</td><td>'+x.factura+'</td><td>'+x.periodo+'</td><td>'+x.metodo+'</td><td><b>S/ '+x.monto.toFixed(2)+'</b></td><td>'+fotosHtml+'</td></tr>';
-  }).join('');
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Reporte Cobros '+desde+' - '+hasta+'</title>';
-  html += '<style>body{font-family:Arial,sans-serif;padding:24px;color:#1a1a2e;}';
-  html += 'h1{color:#2f5597;margin-bottom:4px;} .sub{color:#888;font-size:13px;margin-bottom:24px;}';
-  html += '.kpi-row{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}';
-  html += '.kpi{background:#f0f4ff;border-radius:10px;padding:16px;flex:1;min-width:120px;border-left:4px solid #2f5597;}';
-  html += '.kpi-n{font-size:28px;font-weight:900;color:#2f5597;} .kpi-l{font-size:12px;color:#666;margin-top:4px;}';
-  html += '.section{background:white;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px;}';
-  html += '.section h2{font-size:15px;color:#2f5597;margin:0 0 16px;}';
-  html += 'table{width:100%;border-collapse:collapse;font-size:12px;} th{background:#2f5597;color:white;padding:8px;text-align:left;}';
-  html += 'td{padding:7px 8px;border-bottom:1px solid #f0f0f0;}  tr:hover{background:#f8faff;}';
-  html += '.comprobante-thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb;margin-right:4px;cursor:pointer;}';
-  html += '@media print{body{padding:12px;} .comprobante-thumb{width:32px;height:32px;}}';
-  html += '</style></head><body>';
-  html += '<h1>📊 Reporte de Cobros — GCI Servicios Financieros</h1>';
-  html += '<div class="sub">Período: '+desde+' al '+hasta+' · Generado: '+new Date().toLocaleDateString('es-PE')+'</div>';
-  html += '<div class="kpi-row">';
-  html += '<div class="kpi"><div class="kpi-n">S/ '+total.toFixed(2)+'</div><div class="kpi-l">Total cobrado</div></div>';
-  html += '<div class="kpi"><div class="kpi-n">'+_cobrosAdminData.length+'</div><div class="kpi-l">Cobros registrados</div></div>';
-  html += '<div class="kpi"><div class="kpi-n">'+Object.keys(porAgente).length+'</div><div class="kpi-l">Agentes activos</div></div>';
-  html += '</div>';
-  html += '<div class="section"><h2>📈 Avance por Agente</h2>'+barrasAgentes+'</div>';
-  html += '<div class="section"><h2>📋 Detalle de Cobros</h2>';
-  html += '<table><thead><tr><th>Fecha</th><th>Agente</th><th>Local</th><th>RUC</th><th>Factura</th><th>Período</th><th>Método</th><th>Monto</th><th>Comprobante</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
-  html += '</body></html>';
-
-  var blob = new Blob([html], {type:'text/html;charset=utf-8;'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'Cobros_GCI_'+desde+'_al_'+hasta+'.html';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
-}
-</script>
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cobros');
+    XLSX.writeFile(wb, 'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
+  }).catch(function(e){
+    alert('Error al descargar: '+e.message);
+  });
+}</script>
 
 </body>
 </html>
