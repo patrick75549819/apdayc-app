@@ -443,22 +443,24 @@
       <div class="panel" id="panelEmpadronamientos">
         <div class="filtros">
           <div class="filtro-group">
-            <label>Fecha</label>
-            <input type="date" id="empFecha">
+            <label>Agente</label>
+            <select id="empAgente" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
+              <option value="">Todos los agentes</option>
+            </select>
+          </div>
+          <div class="filtro-group">
+            <label>Desde</label>
+            <input type="date" id="empDesde">
+          </div>
+          <div class="filtro-group">
+            <label>Hasta</label>
+            <input type="date" id="empHasta">
           </div>
           <button class="btn-primary" onclick="cargarEmpadronamientos()">🔍 Buscar</button>
           <button class="btn-excel" onclick="exportarEmpadronamientosExcel()">📥 Excel</button>
         </div>
-        <div class="card">
-          <div class="tabla-wrap">
-            <table>
-              <thead>
-                <tr><th>Agente</th><th>Entrada</th><th>Salida</th><th>Horas</th><th>Puntos GPS</th><th>Estado</th></tr>
-              </thead>
-              <tbody id="empTbody"><tr><td colspan="6" class="no-data">Selecciona una fecha</td></tr></tbody>
-            </table>
-          </div>
-        </div>
+        <div id="empResumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;"></div>
+        <div id="empCards"></div>
       </div>
 
       <!-- AGENTES -->
@@ -480,34 +482,80 @@
 
       <!-- REPORTES -->
       <div class="panel" id="panelReportes">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
-          <div class="card" style="text-align:center;padding:32px 20px;">
-            <div style="font-size:40px;margin-bottom:12px;">💰</div>
-            <div style="font-size:15px;font-weight:700;color:var(--azul-dark);margin-bottom:6px;">Reporte de Cobros</div>
-            <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px;">Todos los cobros por rango de fechas con fotos</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input type="date" id="repDesde" style="padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
-              <input type="date" id="repHasta" style="padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
-              <button class="btn-excel" onclick="exportarReporteCobros()">📥 Descargar Excel</button>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:20px;">
+
+          <!-- Reporte Cobros -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">💰 Reporte de Cobros</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Desde</label>
+                <input type="date" id="repDesde" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Hasta</label>
+                <input type="date" id="repHasta" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+              </div>
+              <button class="btn-excel" onclick="exportarReporteCobros()">📥 Excel — Todos los cobros</button>
             </div>
           </div>
-          <div class="card" style="text-align:center;padding:32px 20px;">
-            <div style="font-size:40px;margin-bottom:12px;">📍</div>
-            <div style="font-size:15px;font-weight:700;color:var(--azul-dark);margin-bottom:6px;">Reporte de Jornadas</div>
-            <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px;">Asistencia, horas y recorrido GPS por día</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input type="date" id="repFechaJornada" style="padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
-              <button class="btn-excel" onclick="exportarReporteJornadas()">📥 Descargar Excel</button>
+
+          <!-- Reporte Jornadas -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">📍 Reporte de Jornadas GPS</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Desde</label>
+                <input type="date" id="repJornDesde" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Hasta</label>
+                <input type="date" id="repJornHasta" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+              </div>
+              <button class="btn-excel" onclick="exportarReporteJornadas()">📥 Excel — Jornadas y GPS</button>
             </div>
           </div>
-          <div class="card" style="text-align:center;padding:32px 20px;">
-            <div style="font-size:40px;margin-bottom:12px;">📋</div>
-            <div style="font-size:15px;font-weight:700;color:var(--azul-dark);margin-bottom:6px;">Reporte de Empadronamientos</div>
-            <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px;">Meta de empadronamiento por agente</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input type="date" id="repFechaEmp" style="padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
-              <button class="btn-excel" onclick="exportarReporteEmpadronamientos()">📥 Descargar Excel</button>
+
+          <!-- Reporte Empadronamientos -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Reporte de Empadronamientos</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Desde</label>
+                <input type="date" id="repEmpDesde" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+                <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Hasta</label>
+                <input type="date" id="repEmpHasta" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+              </div>
+              <button class="btn-excel" onclick="exportarReporteEmpadronamientos()">📥 Excel — Empadronamientos</button>
             </div>
+          </div>
+
+          <!-- Reporte L&RICS / Consulta Licencia -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">🔍 Consulta L&RICS</div><div class="card-badge" id="lyricsStatus">Verificando...</div></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <input type="text" id="lyricsLicencia" placeholder="Número de licencia" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
+              <button class="btn-primary" onclick="consultarLyrics()">🔍 Consultar en L&RICS</button>
+              <div id="lyricsResultado" style="font-size:12px;color:var(--gris-texto);min-height:20px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reportes por Distrito -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">🗺️ Reportes por Distrito</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Desde</label>
+            <input type="date" id="repDistDesde" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+            <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Hasta</label>
+            <input type="date" id="repDistHasta" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+            <button class="btn-secondary" onclick="exportarPorDistrito('Surco')">📍 Surco</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Lima')">📍 Lima (Breña/SL/LV)</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('SJL')">📍 SJL (Rímac/EA)</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Lince')">📍 Lince</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Oxapampa')">📍 Oxapampa</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Huancayo')">📍 Huancayo</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Tarma')">📍 Tarma</button>
+            <button class="btn-secondary" onclick="exportarPorDistrito('Cañete')">📍 Cañete</button>
+            <button class="btn-excel" onclick="exportarTodosDistritos()" style="grid-column:span 4;">📥 Excel — Todos los distritos</button>
           </div>
         </div>
       </div>
@@ -599,6 +647,9 @@ function initFirebase(){
       document.getElementById('empFecha').value = hoy;
       // Cargar selects de agentes
       cargarSelectAgentes();
+      cargarSelectEmpAgentes();
+      // Cargar URL de L&RICS desde Firestore
+      cargarLyricsUrl();
       // Iniciar dashboard
       iniciarDashboard();
     } else {
@@ -880,25 +931,122 @@ function borrarLote(loteId){
 // ============================================================
 // EMPADRONAMIENTOS (JORNADAS)
 // ============================================================
-function cargarEmpadronamientos(){
-  var fecha = document.getElementById('empFecha').value;
-  if(!fecha){ alert('Selecciona una fecha'); return; }
-  document.getElementById('empTbody').innerHTML = '<tr><td colspan="6" class="loading">Cargando...</td></tr>';
-  db.collection('fichajes').where('fecha','==',fecha).get().then(function(snap){
-    if(snap.empty){ document.getElementById('empTbody').innerHTML='<tr><td colspan="6" class="no-data">Sin registros</td></tr>'; return; }
-    var html = '';
-    snap.forEach(function(doc){
-      var d = doc.data();
-      if(!d.nombre) return;
-      var pts = d.ruta ? d.ruta.length : 0;
-      var entrada = d.inicio ? new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '—';
-      var salida = d.fin ? new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '—';
-      var horas = d.horasTrabajadas || (d.activo ? '<span class="badge badge-act">Activo</span>' : '—');
-      var estado = d.activo ? '<span class="badge badge-act">En jornada</span>' : '<span class="badge badge-ok">Finalizado</span>';
-      html += '<tr><td><strong>'+d.nombre+'</strong></td><td>'+entrada+'</td><td>'+salida+'</td><td>'+horas+'</td><td>'+pts+'</td><td>'+estado+'</td></tr>';
-    });
-    document.getElementById('empTbody').innerHTML = html;
+// Sheets de empadronamientos
+var EMP_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
+var CSV_RAW = [
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=625756343&single=true&output=csv',
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOcmqXkioSv7zl1AVIqYyT14MNDbwj_yOSr_eb1CHnRlZwzIFvud9DocTmbENSzvMP_v457EgRDBrg/pub?gid=539502693&single=true&output=csv'
+];
+
+// Distritos y sus variantes de nombre
+var DISTRITOS_MAP = {
+  'Surco': ['surco','santiago de surco'],
+  'Lima': ['lima','breña','brena','san luis','la victoria','victoria'],
+  'SJL': ['sjl','san juan de lurigancho','rimac','rímac','el agustino','agustino'],
+  'Lince': ['lince'],
+  'Oxapampa': ['oxapampa'],
+  'Huancayo': ['huancayo'],
+  'Tarma': ['tarma'],
+  'Cañete': ['cañete','canete']
+};
+
+// Cargar select de agentes en empadronamientos
+function cargarSelectEmpAgentes(){
+  var select = document.getElementById('empAgente');
+  if(!select || select.options.length > 1) return;
+  Object.keys(USUARIOS).sort().forEach(function(email){
+    var opt = document.createElement('option');
+    opt.value = email;
+    opt.innerText = USUARIOS[email];
+    select.appendChild(opt);
   });
+}
+
+function cargarEmpadronamientos(){
+  var desde = document.getElementById('empDesde').value;
+  var hasta = document.getElementById('empHasta').value;
+  var agente = document.getElementById('empAgente').value;
+  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
+
+  document.getElementById('empCards').innerHTML = '<div class="loading">Cargando empadronamientos...</div>';
+
+  // Cargar desde Firestore (reportes de empadronamientos)
+  db.collection('reportes')
+    .where('fecha','>=',desde)
+    .where('fecha','<=',hasta)
+    .get().then(function(snap){
+      var items = [];
+      snap.forEach(function(doc){ var d=doc.data(); d.id=doc.id; items.push(d); });
+      if(agente) items = items.filter(function(x){ return x.emailAgente===agente; });
+      items.sort(function(a,b){ return (a.fecha||'').localeCompare(b.fecha||'')||(a.nombreAgente||'').localeCompare(b.nombreAgente||''); });
+
+      if(items.length===0){
+        document.getElementById('empCards').innerHTML='<div class="no-data">Sin empadronamientos en ese período</div>';
+        document.getElementById('empResumen').innerHTML='';
+        return;
+      }
+
+      // Resumen KPIs
+      var totalItems = 0, totalCobrado = 0, totalPend = 0;
+      items.forEach(function(x){
+        totalItems += (x.items||[]).length;
+        (x.items||[]).forEach(function(it){
+          var s = (it.status||it.estado||'').toUpperCase();
+          if(s==='COBRADO'||s==='COBRADA') totalCobrado++;
+          else totalPend++;
+        });
+      });
+      document.getElementById('empResumen').innerHTML =
+        '<div class="kpi-card"><div class="kpi-num">'+items.length+'</div><div class="kpi-label">Registros</div></div>'+
+        '<div class="kpi-card verde"><div class="kpi-num">'+totalCobrado+'</div><div class="kpi-label">Cobrados</div></div>'+
+        '<div class="kpi-card gris"><div class="kpi-num">'+totalPend+'</div><div class="kpi-label">Pendientes</div></div>';
+
+      // Cards por agente
+      var porAgente = {};
+      items.forEach(function(x){
+        var key = x.emailAgente||x.nombreAgente||'Sin agente';
+        if(!porAgente[key]) porAgente[key] = {nombre:x.nombreAgente||key, items:[], total:0, cobrado:0};
+        (x.items||[]).forEach(function(it){ porAgente[key].items.push(it); });
+        porAgente[key].total += x.totalMonto||0;
+        porAgente[key].cobrado += (x.items||[]).filter(function(it){ return (it.status||it.estado||'').toUpperCase()==='COBRADO'||(it.status||it.estado||'').toUpperCase()==='COBRADA'; }).length;
+      });
+
+      var html = '';
+      Object.keys(porAgente).forEach(function(key){
+        var ag = porAgente[key];
+        var pct = ag.items.length>0 ? Math.round((ag.cobrado/ag.items.length)*100) : 0;
+        html += '<div class="card" style="margin-bottom:16px;">';
+        html += '<div class="card-header">';
+        html += '<div class="card-title">👤 '+ag.nombre+'</div>';
+        html += '<div style="display:flex;align-items:center;gap:10px;">';
+        html += '<span class="badge badge-ok">'+ag.cobrado+'/'+ag.items.length+' cobrados</span>';
+        html += '<strong style="color:var(--azul);">S/ '+ag.total.toFixed(2)+'</strong>';
+        html += '</div></div>';
+        // Barra de progreso
+        html += '<div style="margin-bottom:14px;">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gris-texto);margin-bottom:4px;"><span>Progreso</span><span>'+pct+'%</span></div>';
+        html += '<div style="background:var(--gris-borde);border-radius:20px;height:6px;"><div style="width:'+pct+'%;height:100%;background:var(--azul);border-radius:20px;transition:width 0.5s;"></div></div>';
+        html += '</div>';
+        // Tabla de items
+        html += '<div class="tabla-wrap"><table><thead><tr><th>Establecimiento</th><th>RUC</th><th>Licencia</th><th>Monto</th><th>Estado</th></tr></thead><tbody>';
+        ag.items.forEach(function(it){
+          var s = (it.status||it.estado||'').toUpperCase();
+          var cobrado = s==='COBRADO'||s==='COBRADA';
+          var badgeHtml = cobrado ? '<span class="badge badge-ok">COBRADO</span>' : '<span class="badge badge-pend">PENDIENTE</span>';
+          html += '<tr>';
+          html += '<td>'+(it.nombre||it.establecimiento||'—')+'</td>';
+          html += '<td style="font-size:12px;color:var(--gris-texto);">'+(it.ruc||'—')+'</td>';
+          html += '<td style="font-size:12px;">'+(it.licencia||it.idLicencia||'—')+'</td>';
+          html += '<td><strong>S/ '+(it.monto||0).toFixed(2)+'</strong></td>';
+          html += '<td>'+badgeHtml+'</td>';
+          html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+      });
+      document.getElementById('empCards').innerHTML = html;
+    }).catch(function(e){
+      document.getElementById('empCards').innerHTML = '<div class="no-data">Error: '+e.message+'</div>';
+    });
 }
 
 // ============================================================
@@ -1006,13 +1154,153 @@ function exportarReporteJornadas(){
   });
 }
 
-function exportarReporteEmpadronamientos(){
-  var fecha = document.getElementById('repFechaEmp').value;
-  if(!fecha){ alert('Selecciona una fecha'); return; }
-  exportarReporteJornadas(); // mismo data source por ahora
+function exportarEmpadronamientosExcel(){
+  var desde = document.getElementById('empDesde').value;
+  var hasta = document.getElementById('empHasta').value;
+  var agente = document.getElementById('empAgente').value;
+  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
+  db.collection('reportes').where('fecha','>=',desde).where('fecha','<=',hasta).get().then(function(snap){
+    var rows = [];
+    snap.forEach(function(doc){
+      var x = doc.data();
+      if(agente && x.emailAgente !== agente) return;
+      (x.items||[]).forEach(function(it){
+        var s = (it.status||it.estado||'').toUpperCase();
+        rows.push({
+          'Fecha':x.fecha,'Agente':x.nombreAgente,
+          'Establecimiento':it.nombre||it.establecimiento||'',
+          'RUC':it.ruc||'','Licencia':it.licencia||it.idLicencia||'',
+          'Monto':it.monto||0,
+          'Estado':s||'PENDIENTE'
+        });
+      });
+    });
+    rows.sort(function(a,b){ return a.Fecha.localeCompare(b.Fecha)||a.Agente.localeCompare(b.Agente); });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:12},{wch:14},{wch:35},{wch:12},{wch:12},{wch:10},{wch:12}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Empadronamientos');
+    XLSX.writeFile(wb,'Empadronamientos_GCI_'+desde+'_al_'+hasta+'.xlsx');
+  });
 }
 
-function exportarReporteCobros(){ exportarCobrosExcel(); }
+function exportarReporteEmpadronamientos(){
+  var desde = document.getElementById('repEmpDesde').value;
+  var hasta = document.getElementById('repEmpHasta').value;
+  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
+  document.getElementById('empDesde').value = desde;
+  document.getElementById('empHasta').value = hasta;
+  exportarEmpadronamientosExcel();
+}
+
+function exportarReporteJornadas(){
+  var desde = document.getElementById('repJornDesde').value;
+  var hasta = document.getElementById('repJornHasta').value;
+  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
+  db.collection('fichajes').where('fecha','>=',desde).where('fecha','<=',hasta).get().then(function(snap){
+    var rows = [];
+    snap.forEach(function(doc){
+      var d = doc.data();
+      if(!d.nombre) return;
+      rows.push({
+        'Agente':d.nombre,'Email':d.email,'Fecha':d.fecha,
+        'Entrada':d.inicio?new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
+        'Salida':d.fin?new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
+        'Horas':d.horasTrabajadas||'En curso',
+        'Puntos GPS':d.ruta?d.ruta.length:0,
+        'Estado':d.activo?'Activo':'Finalizado'
+      });
+    });
+    rows.sort(function(a,b){ return a.Fecha.localeCompare(b.Fecha)||a.Agente.localeCompare(b.Agente); });
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:14},{wch:24},{wch:12},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Jornadas');
+    XLSX.writeFile(wb,'Jornadas_GCI_'+desde+'_al_'+hasta+'.xlsx');
+  });
+}
+
+function exportarReporteCobros(){
+  var desde = document.getElementById('repDesde').value;
+  var hasta = document.getElementById('repHasta').value;
+  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
+  document.getElementById('cobFechaDesde').value = desde;
+  document.getElementById('cobFechaHasta').value = hasta;
+  exportarCobrosExcel();
+}
+
+// ============================================================
+// REPORTES POR DISTRITO
+// ============================================================
+async function fetchCSV(url){
+  try{ var r=await fetch(url,{mode:'cors'}); if(r.ok) return await r.text(); }catch(e){}
+  try{ var r2=await fetch('https://corsproxy.io/?'+encodeURIComponent(url)); if(r2.ok) return await r2.text(); }catch(e){}
+  try{ var r3=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url)); if(r3.ok) return await r3.text(); }catch(e){}
+  throw new Error('No se pudo cargar CSV');
+}
+
+function parseCSVSimple(text){
+  var lines = text.split(/\r\n|\r|\n/);
+  var headers = [], rows = [];
+  var headerIdx = -1;
+  for(var i=0;i<lines.length;i++){
+    if(lines[i].indexOf('Id Licencia')>-1||lines[i].indexOf('Licencia')>-1){ headerIdx=i; break; }
+  }
+  if(headerIdx===-1) return [];
+  headers = lines[headerIdx].split(',').map(function(h){ return h.replace(/"/g,'').trim(); });
+  for(var i=headerIdx+1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    var cols = lines[i].split(',');
+    var row = {};
+    headers.forEach(function(h,idx){ row[h] = (cols[idx]||'').replace(/"/g,'').trim(); });
+    rows.push(row);
+  }
+  return rows;
+}
+function cargarLyricsUrl(){
+  db.collection('config').doc('lyrics_proxy').get().then(function(doc){
+    if(doc.exists && doc.data().url){
+      lyricsProxyUrl = doc.data().url;
+      document.getElementById('lyricsStatus').innerText = '🟢 Conectado';
+      document.getElementById('lyricsStatus').style.background = 'var(--verde-bg)';
+      document.getElementById('lyricsStatus').style.color = 'var(--verde)';
+    } else {
+      document.getElementById('lyricsStatus').innerText = '🔴 Sin proxy';
+    }
+  }).catch(function(){
+    document.getElementById('lyricsStatus').innerText = '🔴 Error';
+  });
+}
+
+function consultarLyrics(){
+  var lic = document.getElementById('lyricsLicencia').value.trim();
+  if(!lic){ alert('Ingresa un número de licencia'); return; }
+  if(!lyricsProxyUrl){ alert('El proxy L&RICS no está activo. Inicia el servidor Flask en tu PC.'); return; }
+  document.getElementById('lyricsResultado').innerText = '🔍 Consultando L&RICS...';
+  fetch(lyricsProxyUrl+'/licencia/'+lic)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data && data.nombre){
+        var html = '<div style="background:var(--azul-light);padding:10px;border-radius:8px;margin-top:6px;">';
+        html += '<div style="font-weight:700;color:var(--azul-dark);">'+data.nombre+'</div>';
+        html += '<div style="font-size:12px;color:var(--gris-texto);">RUC: '+(data.ruc||'—')+' · Licencia: '+lic+'</div>';
+        if(data.periodos && data.periodos.length>0){
+          html += '<div style="margin-top:8px;">';
+          data.periodos.forEach(function(p){
+            var color = p.estado==='PENDIENTE'?'var(--rojo)':'var(--verde)';
+            html += '<div style="font-size:12px;padding:3px 0;color:'+color+';">'+p.periodo+' — '+p.estado+(p.monto?' — S/ '+p.monto:'')+'</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+        document.getElementById('lyricsResultado').innerHTML = html;
+      } else {
+        document.getElementById('lyricsResultado').innerText = '⚠️ Licencia no encontrada en L&RICS';
+      }
+    }).catch(function(e){
+      document.getElementById('lyricsResultado').innerText = '❌ Error al conectar con L&RICS: '+e.message;
+    });
+}
 
 // ============================================================
 // GOOGLE MAPS CALLBACK
