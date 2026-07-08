@@ -443,24 +443,16 @@
       <div class="panel" id="panelEmpadronamientos">
         <div class="filtros">
           <div class="filtro-group">
-            <label>Agente</label>
-            <select id="empAgente" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
-              <option value="">Todos los agentes</option>
+            <label>Ver agente</label>
+            <select id="empAgentesel" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;" onchange="filtrarEmpAgente(this.value)">
+              <option value="TODOS">Todos</option>
             </select>
           </div>
-          <div class="filtro-group">
-            <label>Desde</label>
-            <input type="date" id="empDesde">
-          </div>
-          <div class="filtro-group">
-            <label>Hasta</label>
-            <input type="date" id="empHasta">
-          </div>
-          <button class="btn-primary" onclick="cargarEmpadronamientos()">🔍 Buscar</button>
+          <button class="btn-primary" onclick="cargarEmpadronamientos()">🔄 Actualizar</button>
           <button class="btn-excel" onclick="exportarEmpadronamientosExcel()">📥 Excel</button>
         </div>
         <div id="empResumen" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;"></div>
-        <div id="empCards"></div>
+        <div id="empCards"><div class="loading">Cargando empadronamientos...</div></div>
       </div>
 
       <!-- AGENTES -->
@@ -702,6 +694,7 @@ function irA(panel){
 
   if(panel === 'ubicacion') iniciarMapaGPS();
   if(panel === 'agentes') cargarAgentes();
+  if(panel === 'empadronamientos'){ cargarSelectEmpAgentes(); cargarEmpadronamientos(); }
 }
 
 // ============================================================
@@ -931,302 +924,162 @@ function borrarLote(loteId){
 // ============================================================
 // EMPADRONAMIENTOS (JORNADAS)
 // ============================================================
-// Sheets de empadronamientos
-var EMP_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
-var CSV_RAW = [
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vR12Ki_vkay28BrsnqPQh19wTS3qVi3e3gxgo9TfFwdGA2qe46AWNujLB_IY1p_YON4i2IyOOCW6Wg6/pub?gid=625756343&single=true&output=csv',
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQOcmqXkioSv7zl1AVIqYyT14MNDbwj_yOSr_eb1CHnRlZwzIFvud9DocTmbENSzvMP_v457EgRDBrg/pub?gid=539502693&single=true&output=csv'
-];
-
-// Distritos y sus variantes de nombre
-var DISTRITOS_MAP = {
-  'Surco': ['surco','santiago de surco'],
-  'Lima': ['lima','breña','brena','san luis','la victoria','victoria'],
-  'SJL': ['sjl','san juan de lurigancho','rimac','rímac','el agustino','agustino'],
-  'Lince': ['lince'],
-  'Oxapampa': ['oxapampa'],
-  'Huancayo': ['huancayo'],
-  'Tarma': ['tarma'],
-  'Cañete': ['cañete','canete']
+// ============================================================
+// EMPADRONAMIENTOS — Lee del Google Sheets igual que la app móvil
+// ============================================================
+var META_SHEETS_ID = '1IQcy9enam5d0sn8upyJBHMa9WjVfIq5zIfFJwWfhlt4';
+var META_EMAIL_HOJA = {
+  'ptorres@gciperu.com':'PEDRO','mherrera@gciperu.com':'MARTIN',
+  'jleon@gciperu.com':'JHONY','gynga@gciperu.com':'GABRIELA',
+  'rdiaz@gciperu.com':'RUBEN','ecalderon@gciperu.com':'ERNESTO',
+  'rvasquez@gciperu.com':'RONALD','jhuaman@gciperu.com':'JUAN'
 };
+var META_OFICINA_HOJA = 'OFICINA';
+var META_GOAL = 2000;
+var _empData = {}; // cache de datos por hoja
 
-// Cargar select de agentes en empadronamientos
-function cargarSelectEmpAgentes(){
-  var select = document.getElementById('empAgente');
-  if(!select || select.options.length > 1) return;
-  Object.keys(USUARIOS).sort().forEach(function(email){
-    var opt = document.createElement('option');
-    opt.value = email;
-    opt.innerText = USUARIOS[email];
-    select.appendChild(opt);
-  });
+function getSheetCsvUrl(sheetName){
+  return 'https://corsproxy.io/?'+encodeURIComponent(
+    'https://docs.google.com/spreadsheets/d/'+META_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(sheetName)
+  );
 }
 
-function cargarEmpadronamientos(){
-  var desde = document.getElementById('empDesde').value;
-  var hasta = document.getElementById('empHasta').value;
-  var agente = document.getElementById('empAgente').value;
-  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
-
-  document.getElementById('empCards').innerHTML = '<div class="loading">Cargando empadronamientos...</div>';
-
-  // Cargar desde Firestore (reportes de empadronamientos)
-  db.collection('reportes')
-    .where('fecha','>=',desde)
-    .where('fecha','<=',hasta)
-    .get().then(function(snap){
-      var items = [];
-      snap.forEach(function(doc){ var d=doc.data(); d.id=doc.id; items.push(d); });
-      if(agente) items = items.filter(function(x){ return x.emailAgente===agente; });
-      items.sort(function(a,b){ return (a.fecha||'').localeCompare(b.fecha||'')||(a.nombreAgente||'').localeCompare(b.nombreAgente||''); });
-
-      if(items.length===0){
-        document.getElementById('empCards').innerHTML='<div class="no-data">Sin empadronamientos en ese período</div>';
-        document.getElementById('empResumen').innerHTML='';
-        return;
-      }
-
-      // Resumen KPIs
-      var totalItems = 0, totalCobrado = 0, totalPend = 0;
-      items.forEach(function(x){
-        totalItems += (x.items||[]).length;
-        (x.items||[]).forEach(function(it){
-          var s = (it.status||it.estado||'').toUpperCase();
-          if(s==='COBRADO'||s==='COBRADA') totalCobrado++;
-          else totalPend++;
-        });
-      });
-      document.getElementById('empResumen').innerHTML =
-        '<div class="kpi-card"><div class="kpi-num">'+items.length+'</div><div class="kpi-label">Registros</div></div>'+
-        '<div class="kpi-card verde"><div class="kpi-num">'+totalCobrado+'</div><div class="kpi-label">Cobrados</div></div>'+
-        '<div class="kpi-card gris"><div class="kpi-num">'+totalPend+'</div><div class="kpi-label">Pendientes</div></div>';
-
-      // Cards por agente
-      var porAgente = {};
-      items.forEach(function(x){
-        var key = x.emailAgente||x.nombreAgente||'Sin agente';
-        if(!porAgente[key]) porAgente[key] = {nombre:x.nombreAgente||key, items:[], total:0, cobrado:0};
-        (x.items||[]).forEach(function(it){ porAgente[key].items.push(it); });
-        porAgente[key].total += x.totalMonto||0;
-        porAgente[key].cobrado += (x.items||[]).filter(function(it){ return (it.status||it.estado||'').toUpperCase()==='COBRADO'||(it.status||it.estado||'').toUpperCase()==='COBRADA'; }).length;
-      });
-
-      var html = '';
-      Object.keys(porAgente).forEach(function(key){
-        var ag = porAgente[key];
-        var pct = ag.items.length>0 ? Math.round((ag.cobrado/ag.items.length)*100) : 0;
-        html += '<div class="card" style="margin-bottom:16px;">';
-        html += '<div class="card-header">';
-        html += '<div class="card-title">👤 '+ag.nombre+'</div>';
-        html += '<div style="display:flex;align-items:center;gap:10px;">';
-        html += '<span class="badge badge-ok">'+ag.cobrado+'/'+ag.items.length+' cobrados</span>';
-        html += '<strong style="color:var(--azul);">S/ '+ag.total.toFixed(2)+'</strong>';
-        html += '</div></div>';
-        // Barra de progreso
-        html += '<div style="margin-bottom:14px;">';
-        html += '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gris-texto);margin-bottom:4px;"><span>Progreso</span><span>'+pct+'%</span></div>';
-        html += '<div style="background:var(--gris-borde);border-radius:20px;height:6px;"><div style="width:'+pct+'%;height:100%;background:var(--azul);border-radius:20px;transition:width 0.5s;"></div></div>';
-        html += '</div>';
-        // Tabla de items
-        html += '<div class="tabla-wrap"><table><thead><tr><th>Establecimiento</th><th>RUC</th><th>Licencia</th><th>Monto</th><th>Estado</th></tr></thead><tbody>';
-        ag.items.forEach(function(it){
-          var s = (it.status||it.estado||'').toUpperCase();
-          var cobrado = s==='COBRADO'||s==='COBRADA';
-          var badgeHtml = cobrado ? '<span class="badge badge-ok">COBRADO</span>' : '<span class="badge badge-pend">PENDIENTE</span>';
-          html += '<tr>';
-          html += '<td>'+(it.nombre||it.establecimiento||'—')+'</td>';
-          html += '<td style="font-size:12px;color:var(--gris-texto);">'+(it.ruc||'—')+'</td>';
-          html += '<td style="font-size:12px;">'+(it.licencia||it.idLicencia||'—')+'</td>';
-          html += '<td><strong>S/ '+(it.monto||0).toFixed(2)+'</strong></td>';
-          html += '<td>'+badgeHtml+'</td>';
-          html += '</tr>';
-        });
-        html += '</tbody></table></div></div>';
-      });
-      document.getElementById('empCards').innerHTML = html;
-    }).catch(function(e){
-      document.getElementById('empCards').innerHTML = '<div class="no-data">Error: '+e.message+'</div>';
-    });
-}
-
-// ============================================================
-// AGENTES
-// ============================================================
-function cargarAgentes(){
-  var hoy = getTodayStr();
-  db.collection('fichajes').where('fecha','==',hoy).get().then(function(snap){
-    var fichajesHoy = {};
-    snap.forEach(function(doc){ fichajesHoy[doc.data().email] = doc.data(); });
-    db.collection('cobros_lotes').where('fecha','==',hoy).get().then(function(snap2){
-      var cobrosHoy = {};
-      snap2.forEach(function(doc){ var d=doc.data(); cobrosHoy[d.emailAgente]=(cobrosHoy[d.emailAgente]||0)+1; });
-      var html = '';
-      Object.keys(USUARIOS).sort(function(a,b){ return USUARIOS[a].localeCompare(USUARIOS[b]); }).forEach(function(email){
-        var nombre = USUARIOS[email];
-        var isAdmin = ['psara@gciperu.com','ccabelloc@gciperu.com','ptorres@gciperu.com','jessicah@gciperu.com','herberta@gciperu.com','mfranco@gciperu.com','hsalazar@gciperu.com'].indexOf(email)>-1;
-        var fichaje = fichajesHoy[email];
-        var estadoHtml = fichaje ? (fichaje.activo ? '<span class="badge badge-act">Activo</span>' : '<span class="badge badge-ok">Finalizó</span>') : '<span class="badge" style="background:#f1f5f9;color:#94a3b8;">Sin jornada</span>';
-        var cobHoy = cobrosHoy[email] || 0;
-        html += '<tr>';
-        html += '<td><strong>'+nombre+'</strong></td>';
-        html += '<td style="color:var(--gris-texto);font-size:12px;">'+email+'</td>';
-        html += '<td>'+(isAdmin?'<span class="badge badge-act">Admin</span>':'<span class="badge" style="background:var(--gris-bg);color:var(--gris-texto);">Agente</span>')+'</td>';
-        html += '<td>'+estadoHtml+'</td>';
-        html += '<td>'+(cobHoy>0?'<span class="badge badge-ok">'+cobHoy+' cobros</span>':'<span style="color:#94a3b8;font-size:12px;">0</span>')+'</td>';
-        html += '</tr>';
-      });
-      document.getElementById('agentesTbody').innerHTML = html;
-    });
-  });
-}
-
-// ============================================================
-// FOTO MODAL
-// ============================================================
-function verFoto(src){
-  document.getElementById('fotoModalImg').src = src;
-  document.getElementById('fotoModal').classList.add('open');
-}
-function cerrarFoto(modal, e){ if(e.target===modal) document.getElementById('fotoModal').classList.remove('open'); }
-function cerrarFotoBtn(){ document.getElementById('fotoModal').classList.remove('open'); }
-
-// ============================================================
-// EXPORTS EXCEL
-// ============================================================
-function exportarCobrosExcel(){
-  var desde = document.getElementById('repDesde').value || document.getElementById('cobFechaDesde').value;
-  var hasta = document.getElementById('repHasta').value || document.getElementById('cobFechaHasta').value;
-  if(!desde||!hasta){ alert('Selecciona fechas'); return; }
-  db.collection('cobros_lotes').where('fecha','>=',desde).where('fecha','<=',hasta).get().then(function(snap){
-    var rows = [];
-    snap.forEach(function(doc){
-      var x = doc.data();
-      var hora = x.timestamp ? new Date(x.timestamp).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}) : '';
-      var locales = (x.items||[]).map(function(it){ return it.nombre||it.nombreLocal||''; }).join(' | ');
-      var facturas = (x.items||[]).map(function(it){ return (it.factura||'')+(it.ruc?' ('+it.ruc+')':''); }).join(' | ');
-      var periodos = (x.items||[]).map(function(it){ return it.periodo||''; }).join(' | ');
-      rows.push({
-        'Fecha':x.fecha,'Hora':hora,'Agente':x.nombreAgente,
-        'Local(es)':locales,'Factura(s)':facturas,'Periodo(s)':periodos,
-        'Método':x.metodo,'Total':x.totalMonto||0,'Licencias':x.cantItems||1,
-        'Comprobante':(x.imagenes&&x.imagenes.length>0&&x.imagenes[0].startsWith('http'))?'Ver foto':'Sin foto'
-      });
-    });
-    rows.sort(function(a,b){ return a.Fecha.localeCompare(b.Fecha)||a.Agente.localeCompare(b.Agente); });
-    var ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols']=[{wch:12},{wch:8},{wch:14},{wch:35},{wch:25},{wch:16},{wch:14},{wch:10},{wch:10},{wch:12}];
-    // Links en columna Comprobante
-    for(var i=0;i<rows.length;i++){
-      var lote = snap.docs[i] ? snap.docs[i].data() : null;
-      if(lote&&lote.imagenes&&lote.imagenes.length>0&&lote.imagenes[0].startsWith('http')){
-        var cell = XLSX.utils.encode_cell({r:i+1,c:9});
-        ws[cell]={t:'s',v:'Ver foto',l:{Target:lote.imagenes[0]}};
-      }
+function parseCsvMeta(csv){
+  var lines = csv.trim().split(/\r\n|\r|\n/);
+  var items = [];
+  for(var i=1;i<lines.length;i++){
+    var line=lines[i].trim(); if(!line) continue;
+    var cols=[], inQ=false, cur='';
+    for(var c=0;c<line.length;c++){
+      if(line[c]==='"'){ inQ=!inQ; }
+      else if(line[c]===','&&!inQ){ cols.push(cur); cur=''; }
+      else { cur+=line[c]; }
     }
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Cobros');
-    XLSX.writeFile(wb,'Cobros_GCI_'+desde+'_al_'+hasta+'.xlsx');
+    cols.push(cur);
+    var nombre=(cols[0]||'').trim().toUpperCase();
+    var tarifa=parseFloat((cols[1]||'').replace(/[^0-9.,]/g,'').replace(',','.'))||0;
+    var estado=(cols[2]||'').replace(/[^a-zA-Z]/g,'').trim().toUpperCase();
+    if(nombre) items.push({nombre:nombre, tarifa:tarifa, estado:estado});
+  }
+  return items;
+}
+
+function cargarSelectEmpAgentes(){
+  var sel = document.getElementById('empAgentesel');
+  if(!sel || sel.options.length > 1) return;
+  var hojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  hojas.push(META_OFICINA_HOJA);
+  hojas.sort().forEach(function(nombre){
+    var opt = document.createElement('option');
+    opt.value = nombre; opt.innerText = nombre;
+    sel.appendChild(opt);
   });
 }
 
-function exportarReporteJornadas(){
-  var fecha = document.getElementById('repFechaJornada').value;
-  if(!fecha){ alert('Selecciona una fecha'); return; }
-  db.collection('fichajes').where('fecha','==',fecha).get().then(function(snap){
-    var rows = [];
-    snap.forEach(function(doc){
-      var d = doc.data();
-      if(!d.nombre) return;
-      rows.push({
-        'Agente':d.nombre,'Email':d.email,'Fecha':d.fecha,
-        'Entrada':d.inicio?new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
-        'Salida':d.fin?new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
-        'Horas':d.horasTrabajadas||'En curso',
-        'Puntos GPS':d.ruta?d.ruta.length:0,
-        'Estado':d.activo?'Activo':'Finalizado'
-      });
-    });
-    var ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols']=[{wch:14},{wch:24},{wch:12},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12}];
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Jornadas');
-    XLSX.writeFile(wb,'Jornadas_GCI_'+fecha+'.xlsx');
+async function cargarEmpadronamientos(){
+  document.getElementById('empCards').innerHTML = '<div class="loading">Cargando empadronamientos...</div>';
+  var hojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
+  hojas.push(META_OFICINA_HOJA);
+
+  var promesas = hojas.map(async function(hoja){
+    try{
+      var r = await fetch(getSheetCsvUrl(hoja));
+      var csv = await r.text();
+      return {hoja:hoja, items:parseCsvMeta(csv)};
+    } catch(e){
+      return {hoja:hoja, items:[]};
+    }
   });
+
+  var resultados = await Promise.all(promesas);
+  _empData = {};
+  resultados.forEach(function(r){ _empData[r.hoja] = r.items; });
+  renderEmpData('TODOS');
+}
+
+function filtrarEmpAgente(hoja){
+  renderEmpData(hoja);
+}
+
+function renderEmpData(filtro){
+  var hojas = filtro==='TODOS' ? Object.keys(_empData) : [filtro];
+  var totalItems=0, totalCobrado=0, totalMonto=0, totalPend=0;
+
+  // Calcular KPIs globales
+  Object.values(_empData).forEach(function(items){
+    items.forEach(function(it){
+      totalItems++;
+      totalMonto += it.tarifa||0;
+      if(it.estado==='COBRADO'||it.estado==='COBRADA'){ totalCobrado++; }
+      else { totalPend++; }
+    });
+  });
+
+  var pctGlobal = totalItems>0 ? Math.round((totalCobrado/totalItems)*100) : 0;
+  document.getElementById('empResumen').innerHTML =
+    '<div class="kpi-card"><div class="kpi-num">S/ '+totalMonto.toFixed(2)+'</div><div class="kpi-label">Total cartera</div></div>'+
+    '<div class="kpi-card verde"><div class="kpi-num">'+pctGlobal+'%</div><div class="kpi-label">Meta global ('+totalCobrado+'/'+totalItems+')</div></div>'+
+    '<div class="kpi-card gris"><div class="kpi-num">'+totalPend+'</div><div class="kpi-label">Pendientes</div></div>';
+
+  // Cards por agente
+  var html = '';
+  hojas.forEach(function(hoja){
+    var items = _empData[hoja] || [];
+    if(items.length===0) return;
+    var cobrados = items.filter(function(it){ return it.estado==='COBRADO'||it.estado==='COBRADA'; });
+    var pendientes = items.filter(function(it){ return it.estado!=='COBRADO'&&it.estado!=='COBRADA'; });
+    var montoTotal = items.reduce(function(s,it){ return s+(it.tarifa||0); },0);
+    var montoCobrado = cobrados.reduce(function(s,it){ return s+(it.tarifa||0); },0);
+    var pct = items.length>0 ? Math.round((cobrados.length/items.length)*100) : 0;
+
+    html += '<div class="card" style="margin-bottom:20px;">';
+    // Header del agente
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+    html += '<div><div style="font-size:16px;font-weight:700;color:var(--azul-dark);">👤 '+hoja+'</div>';
+    html += '<div style="font-size:12px;color:var(--gris-texto);">S/ '+montoCobrado.toFixed(2)+' de S/ '+montoTotal.toFixed(2)+'</div></div>';
+    html += '<span class="badge badge-act">'+pct+'%</span>';
+    html += '</div>';
+    // Barra de progreso
+    html += '<div style="background:var(--gris-borde);border-radius:20px;height:8px;margin-bottom:14px;"><div style="width:'+pct+'%;height:100%;background:var(--azul);border-radius:20px;"></div></div>';
+    // Lista de establecimientos
+    html += '<div class="tabla-wrap"><table><thead><tr><th>Establecimiento</th><th>Monto</th><th>Estado</th></tr></thead><tbody>';
+    items.forEach(function(it){
+      var cobrado = it.estado==='COBRADO'||it.estado==='COBRADA';
+      html += '<tr>';
+      html += '<td style="font-size:13px;">'+it.nombre+'</td>';
+      html += '<td><strong>S/ '+(it.tarifa||0).toFixed(2)+'</strong></td>';
+      html += '<td>'+(cobrado?'<span class="badge badge-ok">COBRADO</span>':'<span class="badge badge-pend">PENDIENTE</span>')+'</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div></div>';
+  });
+
+  document.getElementById('empCards').innerHTML = html || '<div class="no-data">Sin datos</div>';
 }
 
 function exportarEmpadronamientosExcel(){
-  var desde = document.getElementById('empDesde').value;
-  var hasta = document.getElementById('empHasta').value;
-  var agente = document.getElementById('empAgente').value;
-  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
-  db.collection('reportes').where('fecha','>=',desde).where('fecha','<=',hasta).get().then(function(snap){
-    var rows = [];
-    snap.forEach(function(doc){
-      var x = doc.data();
-      if(agente && x.emailAgente !== agente) return;
-      (x.items||[]).forEach(function(it){
-        var s = (it.status||it.estado||'').toUpperCase();
-        rows.push({
-          'Fecha':x.fecha,'Agente':x.nombreAgente,
-          'Establecimiento':it.nombre||it.establecimiento||'',
-          'RUC':it.ruc||'','Licencia':it.licencia||it.idLicencia||'',
-          'Monto':it.monto||0,
-          'Estado':s||'PENDIENTE'
-        });
+  if(Object.keys(_empData).length===0){ alert('Primero carga los empadronamientos'); return; }
+  var rows = [];
+  Object.keys(_empData).forEach(function(hoja){
+    (_empData[hoja]||[]).forEach(function(it){
+      rows.push({
+        'Agente':hoja,
+        'Establecimiento':it.nombre,
+        'Monto':it.tarifa||0,
+        'Estado':it.estado||'PENDIENTE'
       });
     });
-    rows.sort(function(a,b){ return a.Fecha.localeCompare(b.Fecha)||a.Agente.localeCompare(b.Agente); });
-    var ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols']=[{wch:12},{wch:14},{wch:35},{wch:12},{wch:12},{wch:10},{wch:12}];
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Empadronamientos');
-    XLSX.writeFile(wb,'Empadronamientos_GCI_'+desde+'_al_'+hasta+'.xlsx');
   });
+  var ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:14},{wch:40},{wch:10},{wch:12}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Empadronamientos');
+  var fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb,'Empadronamientos_GCI_'+fecha+'.xlsx');
 }
 
 function exportarReporteEmpadronamientos(){
-  var desde = document.getElementById('repEmpDesde').value;
-  var hasta = document.getElementById('repEmpHasta').value;
-  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
-  document.getElementById('empDesde').value = desde;
-  document.getElementById('empHasta').value = hasta;
-  exportarEmpadronamientosExcel();
-}
-
-function exportarReporteJornadas(){
-  var desde = document.getElementById('repJornDesde').value;
-  var hasta = document.getElementById('repJornHasta').value;
-  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
-  db.collection('fichajes').where('fecha','>=',desde).where('fecha','<=',hasta).get().then(function(snap){
-    var rows = [];
-    snap.forEach(function(doc){
-      var d = doc.data();
-      if(!d.nombre) return;
-      rows.push({
-        'Agente':d.nombre,'Email':d.email,'Fecha':d.fecha,
-        'Entrada':d.inicio?new Date(d.inicio).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
-        'Salida':d.fin?new Date(d.fin).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'}):'—',
-        'Horas':d.horasTrabajadas||'En curso',
-        'Puntos GPS':d.ruta?d.ruta.length:0,
-        'Estado':d.activo?'Activo':'Finalizado'
-      });
-    });
-    rows.sort(function(a,b){ return a.Fecha.localeCompare(b.Fecha)||a.Agente.localeCompare(b.Agente); });
-    var ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols']=[{wch:14},{wch:24},{wch:12},{wch:10},{wch:10},{wch:12},{wch:12},{wch:12}];
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb,ws,'Jornadas');
-    XLSX.writeFile(wb,'Jornadas_GCI_'+desde+'_al_'+hasta+'.xlsx');
-  });
-}
-
-function exportarReporteCobros(){
-  var desde = document.getElementById('repDesde').value;
-  var hasta = document.getElementById('repHasta').value;
-  if(!desde||!hasta){ alert('Selecciona rango de fechas'); return; }
-  document.getElementById('cobFechaDesde').value = desde;
-  document.getElementById('cobFechaHasta').value = hasta;
-  exportarCobrosExcel();
+  cargarEmpadronamientos().then(function(){ exportarEmpadronamientosExcel(); });
 }
 
 // ============================================================
