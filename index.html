@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1029,7 +1029,8 @@ diasTexto = (dias.value||0) + ' días';
 entradaTexto = '—';
 }
 let _tp = document.getElementById('tipoPago').value;
-let tipoPagoLabel = _tp=='anual11'?'ANUAL (12 MESES - 11% DCTO)':
+let tipoPagoLabel = _tp=='semestral5'?'SEMESTRAL (6 MESES - 5% DCTO)':
+  _tp=='anual11'?'ANUAL (12 MESES - 11% DCTO)':
   _tp=='anual13'?'ANUAL (12 MESES - 13% DCTO)':
   _tp=='membresia11'?'MEMBRESÍA + ANUAL (11% DCTO)':
   _tp=='membresia13'?'MEMBRESÍA + ANUAL (13% DCTO)':'MENSUAL';
@@ -1084,12 +1085,18 @@ val = Number(asientosVal) || m2V;
 }
 if(giroVal=="Hotel") val=val*1.5;
 let p=0.252;
-if(m2V<=15)p=0.60; else if(m2V<=25)p=0.57; else if(m2V<=50)p=0.462; else if(m2V<=100)p=0.342; else if(m2V<=200)p=0.306;
+let pLabel='';
+if(m2V<=15){p=0.60;pLabel='m²≤15: 60%';}
+else if(m2V<=25){p=0.57;pLabel='m²≤25: 57%';}
+else if(m2V<=50){p=0.462;pLabel='m²≤50: 46.2%';}
+else if(m2V<=100){p=0.342;pLabel='m²≤100: 34.2%';}
+else if(m2V<=200){p=0.306;pLabel='m²≤200: 30.6%';}
+else{pLabel='m²>200: 25.2%';}
 let base=2.5*0.35;
 let total=base*(val*p)*h*d*0.03;
 filas3 = [
 ['1) Base (2.5 × 0.35)', base.toFixed(4)],
-['2) Valor × '+p, (val*p).toFixed(4)],
+['2) Valor ('+val+') × '+p+' ('+pLabel+')', (val*p).toFixed(4)],
 ['3) × Horas', '× '+h],
 ['4) × Días', '× '+d],
 ['5) × Factor 0.03', '= S/ '+total.toFixed(2)]
@@ -1150,7 +1157,7 @@ else if(m2V<=2000)p=0.138;
 let aforoB = (val * 0.60).toFixed(0);
 let horasC = (h * d);
 colA = (giroVal=="Gimnasio") ? Number(nivelGimnasio.value) : 0.35;
-colB = val + ' X 60% = ' + aforoB;
+colB = val + ' X ' + (p*100).toFixed(1) + '% = ' + aforoB;
 colC = h + ' X ' + d + ' = ' + horasC;
 colD = 0.03;
 tarifaMensual = Number(window._mensualBase||totalFinal).toFixed(2);
@@ -1197,32 +1204,52 @@ let _base = window._mensualBase || 0;
 // Mensual ya aparece en tabla de desglose
 
 
-// CUADRO ANUAL si aplica
+// CUADRO SEMESTRAL/ANUAL si aplica
 if(_tp2!=='mensual' && _base>0){
-  let _dcto = (_tp2==='anual11'||_tp2==='membresia11') ? 11 : 13;
-  let _factor = 1 - _dcto/100;
-  let _anual = _base * 12 * _factor;
-
-  doc.setFillColor(...gris);
-  doc.roundedRect(margin, y, cw, _tp2.startsWith('membresia')?36:30, 2, 2, 'F');
-  y += 6;
-  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
-  doc.text('TARIFA ANUAL CON '+_dcto+'% DE DESCUENTO', margin+4, y);
-  y += 5;
-  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...negro);
-  doc.text('S/ '+_base.toFixed(2)+' x 12 meses = S/ '+(_base*12).toFixed(2), margin+4, y);
-  y += 5;
-  doc.setTextColor(220,0,0);
-  doc.text('Descuento '+_dcto+'%: - S/ '+(_base*12*(_dcto/100)).toFixed(2), margin+4, y);
-  y += 5;
-  doc.setTextColor(...negro); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  doc.text('S/ '+_anual.toFixed(2), margin+4, y);
-  if(_tp2.startsWith('membresia')){
+  if(_tp2==='semestral5'){
+    // SEMESTRAL 5%
+    let _semestral = _base * 6 * 0.95;
+    doc.setFillColor(...gris);
+    doc.roundedRect(margin, y, cw, 30, 2, 2, 'F');
+    y += 6;
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
+    doc.text('TARIFA SEMESTRAL CON 5% DE DESCUENTO', margin+4, y);
     y += 5;
-    doc.setFontSize(9); doc.setFont('helvetica','normal');
-    doc.text('+ Mensualidad: S/ '+_base.toFixed(2), margin+4, y);
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...negro);
+    doc.text('S/ '+_base.toFixed(2)+' x 6 meses = S/ '+(_base*6).toFixed(2), margin+4, y);
+    y += 5;
+    doc.setTextColor(220,0,0);
+    doc.text('Descuento 5%: - S/ '+(_base*6*0.05).toFixed(2), margin+4, y);
+    y += 5;
+    doc.setTextColor(...negro); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text('S/ '+_semestral.toFixed(2), margin+4, y);
+    y += 10;
+  } else {
+    // ANUAL 11% o 13%
+    let _dcto = (_tp2==='anual11'||_tp2==='membresia11') ? 11 : 13;
+    let _factor = 1 - _dcto/100;
+    let _anual = _base * 12 * _factor;
+    doc.setFillColor(...gris);
+    doc.roundedRect(margin, y, cw, _tp2.startsWith('membresia')?36:30, 2, 2, 'F');
+    y += 6;
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...azul);
+    doc.text('TARIFA ANUAL CON '+_dcto+'% DE DESCUENTO', margin+4, y);
+    y += 5;
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(...negro);
+    doc.text('S/ '+_base.toFixed(2)+' x 12 meses = S/ '+(_base*12).toFixed(2), margin+4, y);
+    y += 5;
+    doc.setTextColor(220,0,0);
+    doc.text('Descuento '+_dcto+'%: - S/ '+(_base*12*(_dcto/100)).toFixed(2), margin+4, y);
+    y += 5;
+    doc.setTextColor(...negro); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+    doc.text('S/ '+_anual.toFixed(2), margin+4, y);
+    if(_tp2.startsWith('membresia')){
+      y += 5;
+      doc.setFontSize(9); doc.setFont('helvetica','normal');
+      doc.text('+ Mensualidad: S/ '+_base.toFixed(2), margin+4, y);
+    }
+    y += 10;
   }
-  y += 10;
 }
 
 // CUADRO TOTAL FINAL
