@@ -2011,6 +2011,13 @@ var META_EMAIL_HOJA = {
   'jhuaman@gciperu.com':   'JUAN'
 };
 var META_OFICINA_HOJA = 'OFICINA';
+
+// Obtener nombre de la hoja del mes actual (JULIO, AGOSTO, etc.)
+function getHojaMesActual(){
+  var meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
+               'JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  return meses[new Date().getMonth()];
+}
 var META_OFICINA_GOAL = 3000;
 var META_ADMINS = [
   'mfranco@gciperu.com',
@@ -2035,7 +2042,10 @@ function getSheetCsvUrl(sheetName){
 function parseCsvMeta(csv){
   var lines = csv.trim().replace(/\r/g,'').split('\n');
   var items = [];
-  for(var i=1;i<lines.length;i++){
+  // Detectar si la primera fila es encabezado (NOMBRE DE LOCAL, TARIFA, ESTADO, AGENTE)
+  var startIdx = 1;
+  if(lines[0] && lines[0].toUpperCase().indexOf('NOMBRE')>-1) startIdx = 1;
+  for(var i=startIdx;i<lines.length;i++){
     var line = lines[i].trim();
     if(!line) continue;
     var cols=[], inQ=false, cur='';
@@ -2048,7 +2058,8 @@ function parseCsvMeta(csv){
     var nombre=(cols[0]||'').replace(/[^\w\s\.\-\/áéíóúÁÉÍÓÚñÑ]/g,'').trim().toUpperCase();
     var tarifa=parseFloat((cols[1]||'').replace(/[^0-9\.\,]/g,'').replace(',','.').trim())||0;
     var estado=(cols[2]||'').replace(/[^a-zA-Z]/g,'').trim().toUpperCase();
-    if(nombre) items.push({nombre:nombre,tarifa:tarifa,estado:estado});
+    var agente=(cols[3]||'').trim().toUpperCase();
+    if(nombre) items.push({nombre:nombre,tarifa:tarifa,estado:estado,agente:agente});
   }
   return items;
 }
@@ -2200,34 +2211,75 @@ function loadMeta(){
   }
 
   if(esAdmin){
-    var todasHojas=Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
-    var hojasFetch=todasHojas.map(function(h){
-      return fetch(getSheetCsvUrl(h)).then(function(r){ return r.text(); }).then(function(csv){
-        return {hoja:h, items:parseCsvMeta(csv), goal:META_GOAL};
-      }).catch(function(){ return {hoja:h, items:[], goal:META_GOAL}; });
-    });
+    // Cargar hoja del mes actual (JULIO, AGOSTO, etc.)
+    var hojaDelMes = getHojaMesActual();
+    var hojasFetch = [
+      fetch(getSheetCsvUrl(hojaDelMes)).then(function(r){ return r.text(); }).then(function(csv){
+        return {hoja:hojaDelMes, items:parseCsvMeta(csv), goal:META_GOAL};
+      }).catch(function(){ return {hoja:hojaDelMes, items:[], goal:META_GOAL}; })
+    ];
+    // Mantener compatibilidad con hojas antiguas por agente
     hojasFetch.push(
-      fetch(getSheetCsvUrl(META_OFICINA_HOJA)).then(function(r){ return r.text(); }).then(function(csv){
-        return {hoja:META_OFICINA_HOJA, items:parseCsvMeta(csv), goal:META_OFICINA_GOAL};
-      }).catch(function(){ return {hoja:META_OFICINA_HOJA, items:[], goal:META_OFICINA_GOAL}; })
+      Promise.resolve({hoja:'_dummy', items:[], goal:0})
     );
     Promise.all(hojasFetch).then(function(resultados){
       if(loadingEl) loadingEl.style.display='none';
       _metaCache={};
-      resultados.forEach(function(res){ _metaCache[res.hoja]=res; });
-      // Si Pedro es admin+agente, mostrar su hoja primero
-      if(esAgente){
-        var hojaPropia=META_EMAIL_HOJA[email];
-        metaRenderAdmin(hojaPropia);
-      } else {
-        metaRenderAdmin('TODOS');
+      // Con nueva estructura por mes: agrupar items por agente
+      resultados.forEach(function(res){
+        if(res.hoja === '_dummy') return;
+        if(res.items.length > 0 && res.items[0].agente){
+          // Nueva estructura: una hoja por mes, col D = agente
+          var porAgente = {};
+          res.items.forEach(function(item){
+            var ag = item.agente || 'SIN AGENTE';
+            if(!porAgente[ag]) porAgente[ag] = [];
+            porAgente[ag].push(item);
+          });
+          Object.keys(porAgente).forEach(function(ag){
+            _metaCache[ag] = {hoja:ag, items:porAgente[ag], goal:META_GOAL};
+          });
+        } else {
+          // Estructura antigua: una hoja por agente
+          _metaCache[res.hoja] = res;
+        }
+      });
+      // Agregar botones de agentes dinámicamente
+      var botonesEl = document.getElementById('metaBotonesAgentes');
+      if(botonesEl){
+        botonesEl.innerHTML = '';
+        var agentes = Object.keys(_metaCache).sort();
+        agentes.forEach(function(nombre){
+          var btn = document.createElement('button');
+          btn.className = 'meta-agente-btn';
+          btn.innerText = nombre;
+          btn.setAttribute('data-nombre', nombre);
+          btn.style.cssText = 'padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:#e5e7eb;color:#333;';
+          btn.onclick = function(){ metaRenderAdmin(nombre); };
+          botonesEl.appendChild(btn);
+        });
+        // Botón TODOS
+        var btnTodos = document.createElement('button');
+        btnTodos.className = 'meta-agente-btn';
+        btnTodos.innerText = 'TODOS';
+        btnTodos.setAttribute('data-nombre', 'TODOS');
+        btnTodos.style.cssText = 'padding:6px 14px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:#2f5597;color:white;';
+        btnTodos.onclick = function(){ metaRenderAdmin('TODOS'); };
+        botonesEl.insertBefore(btnTodos, botonesEl.firstChild);
       }
+      metaRenderAdmin('TODOS');
     });
   } else if(esAgente){
-    var hoja=META_EMAIL_HOJA[email];
-    fetch(getSheetCsvUrl(hoja)).then(function(r){ return r.text(); }).then(function(csv){
+    // Agente: leer hoja del mes y filtrar por su nombre
+    var hojaDelMes2 = getHojaMesActual();
+    var nombreAgente = (USUARIOS[email.toLowerCase()]||email.split('@')[0]).toUpperCase();
+    fetch(getSheetCsvUrl(hojaDelMes2)).then(function(r){ return r.text(); }).then(function(csv){
       if(loadingEl) loadingEl.style.display='none';
-      var items=parseCsvMeta(csv);
+      var todosItems = parseCsvMeta(csv);
+      // Filtrar por agente si tiene columna D, sino mostrar todos
+      var items = todosItems.filter(function(it){
+        return !it.agente || it.agente === nombreAgente;
+      });
       var pagado=items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
       var pct=Math.min(100,Math.round(pagado/META_GOAL*100));
       actualizarHeaderMeta(pagado, META_GOAL, pct);
