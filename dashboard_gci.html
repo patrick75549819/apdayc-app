@@ -1321,123 +1321,126 @@ function cargarAnalisisExcel(input){
 function renderAnalisis(){
   document.getElementById('analisisKPIs').style.display = 'block';
 
-  // RESUMEN
+  // RESUMEN — fila 2 = período, fila 4 en adelante = datos
   var resumen = _analisisData['Resumen'] || [];
-  var periodo = (resumen[1]||[])[0] || '';
-  document.getElementById('analisisPeriodo').innerText = periodo;
+  document.getElementById('analisisPeriodo').innerText = (resumen[1]||[])[0]||'';
 
-  // KPI Cards
-  var kpis = [
-    {label:'Total Cartera', icon:'🏢', color:'var(--azul)', row:4},
-    {label:'🔴 Churn Crítico', icon:'', color:'#dc2626', row:5},
-    {label:'🟡 Riesgo Rescatable', icon:'', color:'#d97706', row:7},
-    {label:'🟢 Fidelizada', icon:'', color:'#16a34a', row:8},
-    {label:'⚡ Total Alerta', icon:'', color:'#7c3aed', row:10},
+  // Buscar filas de indicadores
+  var kpiMap = {};
+  for(var i=4;i<resumen.length;i++){
+    var r = resumen[i]; if(!r||!r[0]) continue;
+    kpiMap[String(r[0]).trim()] = r;
+  }
+  var kpiDefs = [
+    {key:'Total Cartera',color:'var(--azul)'},
+    {key:'Churn Crítico',color:'#dc2626'},
+    {key:'Riesgo Rescatable',color:'#d97706'},
+    {key:'Fidelizada + F.Adelantada',color:'#16a34a'},
+    {key:'Total en Alerta',color:'#7c3aed'},
   ];
   var html = '';
-  kpis.forEach(function(k){
-    var row = resumen[k.row] || [];
-    var n = row[1] || '—';
-    var pct = row[2] || '';
+  kpiDefs.forEach(function(k){
+    var row = null;
+    Object.keys(kpiMap).forEach(function(key){
+      if(key.toUpperCase().indexOf(k.key.toUpperCase().slice(0,8))>-1) row = kpiMap[key];
+    });
+    var n = row ? row[1] : '—';
+    var pct = row ? (row[2]||'') : '';
+    var monto = row ? (row[3]||'') : '';
     html += '<div class="stat-card" style="border-top:3px solid '+k.color+';">';
-    html += '<div class="stat-label">'+k.label+'</div>';
+    html += '<div class="stat-label">'+k.key+'</div>';
     html += '<div class="stat-value" style="font-size:22px;color:'+k.color+';">'+n+'</div>';
-    html += '<div class="stat-sub" style="color:var(--gris-texto);">'+pct+'</div>';
+    html += '<div style="font-size:11px;color:var(--gris-texto);">'+pct+(monto?' · S/ '+Number(monto).toFixed(0):'')+'</div>';
     html += '</div>';
   });
   document.getElementById('analisisCards').innerHTML = html;
 
-  // TOP RIESGO
+  // TOP RIESGO — col: 0=#, 1=ID, 2=Estab, 3=Dist, 4=Oficina, 5=Tipo, 6=S/, 7=MesesΔ, 8=Urgencia
   var topRiesgo = _analisisData['Top Riesgo'] || [];
   var trHtml = '';
-  for(var i=1; i<topRiesgo.length; i++){
-    var r = topRiesgo[i];
-    if(!r[0] || r[0]==='#' || r[0]==='TOTAL') continue;
+  var count = 0;
+  for(var i=2;i<topRiesgo.length;i++){
+    var r = topRiesgo[i]; if(!r[0]&&!r[1]) continue;
     var urgencia = String(r[8]||'');
-    var color = urgencia==='CRÍTICO' ? 'var(--rojo)' : 'var(--amarillo)';
+    var color = urgencia==='CRÍTICO'?'var(--rojo)':'var(--amarillo)';
     trHtml += '<tr>';
     trHtml += '<td><strong>'+r[0]+'</strong></td>';
-    trHtml += '<td>'+r[2]+'</td>';
-    trHtml += '<td style="font-size:12px;">'+r[3]+'</td>';
+    trHtml += '<td style="font-size:12px;color:var(--azul);">'+r[1]+'</td>';
+    trHtml += '<td style="font-size:12px;">'+r[2]+'</td>';
+    trHtml += '<td style="font-size:11px;">'+r[3]+'</td>';
     trHtml += '<td style="font-size:11px;color:var(--gris-texto);">'+r[4]+'</td>';
     trHtml += '<td style="font-size:11px;">'+String(r[5]||'').slice(0,30)+'</td>';
-    trHtml += '<td><strong style="color:var(--rojo);">S/ '+(Number(r[6])||0).toFixed(2)+'</strong></td>';
-    trHtml += '<td style="color:var(--rojo);">'+r[7]+'</td>';
+    trHtml += '<td><strong style="color:var(--rojo);">S/ '+Number(r[6]||0).toFixed(2)+'</strong></td>';
+    trHtml += '<td style="color:var(--rojo);font-weight:700;">'+r[7]+'</td>';
     trHtml += '<td><span class="badge" style="background:'+color+'22;color:'+color+';">'+urgencia+'</span></td>';
     trHtml += '</tr>';
+    count++;
   }
   document.getElementById('topRiesgoBody').innerHTML = trHtml;
-  document.getElementById('topRiesgoBadge').innerText = (topRiesgo.length-2)+' establecimientos';
+  document.getElementById('topRiesgoBadge').innerText = count+' establecimientos';
 
-  // POR DISTRITO
+  // POR DISTRITO — col: 0=Dist,1=ChCrit,2=ChRecup,3=Riesgo,4=Fidel,5=FAde,6=Total,7=Alerta,8=Tasa%,9=S/Riesgo,10=S/Sano
   var distritos = _analisisData['Por Distrito'] || [];
   var dHtml = '';
-  for(var i=2; i<distritos.length; i++){
-    var r = distritos[i];
-    if(!r[0]||r[0]==='DISTRITO'||r[0]==='TOTAL') continue;
-    var tasa = String(r[8]||'');
-    var tasaNum = parseFloat(tasa)||0;
-    var color = tasaNum>40?'var(--rojo)':tasaNum>30?'var(--amarillo)':'var(--verde)';
+  for(var i=2;i<distritos.length;i++){
+    var r = distritos[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
+    var tasa = String(r[8]||''); var tasaNum = parseFloat(tasa)||0;
+    var c = tasaNum>40?'var(--rojo)':tasaNum>30?'var(--amarillo)':'var(--verde)';
     dHtml += '<tr><td><strong>'+r[0]+'</strong></td><td>'+r[6]+'</td>';
     dHtml += '<td>'+r[7]+'</td>';
-    dHtml += '<td><span style="color:'+color+';font-weight:700;">'+tasa+'</span></td>';
-    dHtml += '<td>S/ '+(Number(r[9])||0).toFixed(0)+'</td></tr>';
+    dHtml += '<td><span style="color:'+c+';font-weight:700;">'+tasa+'</span></td>';
+    dHtml += '<td>S/ '+Number(r[9]||0).toFixed(0)+'</td></tr>';
   }
   document.getElementById('distritosBody').innerHTML = dHtml;
 
-  // POR OFICINA
+  // POR OFICINA — col: 0=Ofic,1=Churn,2=ChCrit,3=ChRecup,4=Riesgo,5=Fidel,6=Total,7=TasaAlerta%,8=S/Riesgo
   var oficinas = _analisisData['Por Oficina'] || [];
   var oHtml = '';
-  for(var i=2; i<oficinas.length; i++){
-    var r = oficinas[i];
-    if(!r[0]||r[0]==='OFICINA'||r[0]==='TOTAL') continue;
-    var churnTotal = (Number(r[2])||0)+(Number(r[3])||0);
+  for(var i=2;i<oficinas.length;i++){
+    var r = oficinas[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
     oHtml += '<tr><td><strong>'+r[0]+'</strong></td><td>'+r[6]+'</td>';
-    oHtml += '<td>'+churnTotal+'</td>';
+    oHtml += '<td>'+r[1]+'</td>';
     oHtml += '<td style="color:var(--rojo);font-weight:700;">'+r[7]+'</td>';
-    oHtml += '<td>S/ '+(Number(r[8])||0).toFixed(0)+'</td></tr>';
+    oHtml += '<td>S/ '+Number(r[8]||0).toFixed(0)+'</td></tr>';
   }
   document.getElementById('oficinasBody').innerHTML = oHtml;
 
-  // POR TIPO
+  // POR TIPO — col: 0=Tipo,6=Total,7=Alerta,8=Tasa%,9=S/Riesgo
   var tipos = _analisisData['Por Tipo'] || [];
   var tHtml = '';
-  for(var i=2; i<tipos.length; i++){
-    var r = tipos[i];
-    if(!r[0]||r[0]==='TIPO NEGOCIO'||r[0]==='TOTAL') continue;
-    tHtml += '<tr><td style="font-size:11px;">'+String(r[0]).slice(0,40)+'</td>';
+  for(var i=2;i<tipos.length;i++){
+    var r = tipos[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
+    tHtml += '<tr><td style="font-size:11px;">'+String(r[0]).slice(0,45)+'</td>';
     tHtml += '<td>'+r[6]+'</td>';
     tHtml += '<td style="font-weight:700;">'+r[8]+'</td>';
-    tHtml += '<td>S/ '+(Number(r[9])||0).toFixed(0)+'</td></tr>';
+    tHtml += '<td>S/ '+Number(r[9]||0).toFixed(0)+'</td></tr>';
   }
   document.getElementById('tiposBody').innerHTML = tHtml;
 
-  // PERFIL LEALTAD
+  // PERFIL LEALTAD — col: 0=Tramo,6=Total,7=Tasa%,8=S/Riesgo,9=S/Sano,10=Recomendación
   var lealtad = _analisisData['Perfil Lealtad'] || [];
   var lHtml = '';
-  for(var i=2; i<lealtad.length; i++){
-    var r = lealtad[i];
-    if(!r[0]||r[0]==='TRAMO'||r[0]==='TOTAL') continue;
+  for(var i=2;i<lealtad.length;i++){
+    var r = lealtad[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
     lHtml += '<tr><td><strong>'+r[0]+'</strong></td>';
     lHtml += '<td>'+r[6]+'</td>';
     lHtml += '<td style="font-weight:700;">'+r[7]+'</td>';
-    lHtml += '<td>S/ '+(Number(r[8])||0).toFixed(0)+'</td>';
+    lHtml += '<td>S/ '+Number(r[8]||0).toFixed(0)+'</td>';
     lHtml += '<td style="font-size:11px;color:var(--gris-texto);">'+r[10]+'</td></tr>';
   }
   document.getElementById('lealtadBody').innerHTML = lHtml;
 
-  // SEGMENTACIÓN TICKET
+  // SEGMENTO TICKET — col: 0=Seg,6=Total,7=Tasa%,8=S/Riesgo,9=S/Sano,10=S/Total
   var tickets = _analisisData['Segmento Ticket'] || [];
   var skHtml = '';
-  for(var i=2; i<tickets.length; i++){
-    var r = tickets[i];
-    if(!r[0]||r[0]==='SEGMENTO'||r[0]==='TOTAL') continue;
+  for(var i=2;i<tickets.length;i++){
+    var r = tickets[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
     skHtml += '<tr><td><strong>'+r[0]+'</strong></td>';
     skHtml += '<td>'+r[6]+'</td>';
     skHtml += '<td style="font-weight:700;">'+r[7]+'</td>';
-    skHtml += '<td style="color:var(--rojo);">S/ '+(Number(r[8])||0).toFixed(0)+'</td>';
-    skHtml += '<td style="color:var(--verde);">S/ '+(Number(r[9])||0).toFixed(0)+'</td>';
-    skHtml += '<td>S/ '+(Number(r[10])||0).toFixed(0)+'</td></tr>';
+    skHtml += '<td style="color:var(--rojo);">S/ '+Number(r[8]||0).toFixed(0)+'</td>';
+    skHtml += '<td style="color:var(--verde);">S/ '+Number(r[9]||0).toFixed(0)+'</td>';
+    skHtml += '<td>S/ '+Number(r[10]||0).toFixed(0)+'</td></tr>';
   }
   document.getElementById('ticketsBody').innerHTML = skHtml;
 
