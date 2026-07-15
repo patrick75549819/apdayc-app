@@ -325,9 +325,7 @@
       <div class="nav-item" onclick="irA('reportes')">
         <span class="icon">📈</span> Reportes Excel
       </div>
-      <div class="nav-item" onclick="irA('analisis')">
-        <span class="icon">🔬</span> Análisis Financiero
-      </div>
+
     </nav>
     <div class="sidebar-footer">GCI Panel v2.0 · 2026</div>
   </div>
@@ -572,127 +570,6 @@
         </div>
       </div>
 
-      <!-- ANÁLISIS FINANCIERO -->
-      <div class="panel" id="panelAnalisis">
-
-        <!-- Upload Excel -->
-        <div class="card" style="margin-bottom:20px;border:2px dashed var(--azul-light);">
-          <div style="text-align:center;padding:10px 0 16px;">
-            <div style="font-size:32px;margin-bottom:8px;">📊</div>
-            <div style="font-size:15px;font-weight:700;color:var(--azul-dark);margin-bottom:4px;">Subir Excel de Análisis</div>
-            <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px;">Sube el archivo GCI_Analisis.xlsx cada mes para actualizar los reportes</div>
-            <label style="background:var(--azul);color:white;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;">
-              📂 Seleccionar archivo Excel
-              <input type="file" id="analisisFile" accept=".xlsx,.xls" style="display:none;" onchange="cargarAnalisisExcel(this)">
-            </label>
-            <div id="analisisStatus" style="margin-top:10px;font-size:12px;color:var(--gris-texto);"></div>
-          </div>
-        </div>
-
-        <!-- KPIs Resumen -->
-        <div id="analisisKPIs" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <div>
-              <div style="font-size:18px;font-weight:700;color:var(--azul-dark);">Resumen Ejecutivo</div>
-              <div style="font-size:12px;color:var(--gris-texto);" id="analisisPeriodo"></div>
-            </div>
-            <button class="btn-excel" onclick="exportarAnalisisExcel()">📥 Exportar reporte</button>
-          </div>
-
-          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;" id="analisisCards"></div>
-
-          <!-- Alertas Top Riesgo -->
-          <div class="card" style="margin-bottom:20px;border-left:4px solid var(--rojo);">
-            <div class="card-header">
-              <div class="card-title" style="color:var(--rojo);">🚨 Top Riesgo de Fuga</div>
-              <div class="card-badge" style="background:var(--rojo-bg);color:var(--rojo);" id="topRiesgoBadge"></div>
-            </div>
-            <div class="tabla-wrap">
-              <table id="topRiesgoTable">
-                <thead><tr><th>#</th><th>Establecimiento</th><th>Distrito</th><th>Oficina</th><th>Tipo</th><th>S/ Recuperable</th><th>Meses Δ</th><th>Urgencia</th></tr></thead>
-                <tbody id="topRiesgoBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Grid reportes -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-
-            <!-- Por Distrito -->
-            <div class="card">
-              <div class="card-header"><div class="card-title">🗺️ Por Distrito</div></div>
-              <div class="tabla-wrap">
-                <table>
-                  <thead><tr><th>Distrito</th><th>Total</th><th>Alerta</th><th>Tasa%</th><th>S/ Riesgo</th></tr></thead>
-                  <tbody id="distritosBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Por Oficina -->
-            <div class="card">
-              <div class="card-header"><div class="card-title">🏢 Por Oficina</div></div>
-              <div class="tabla-wrap">
-                <table>
-                  <thead><tr><th>Oficina</th><th>Total</th><th>Churn</th><th>Tasa Alerta%</th><th>S/ Riesgo</th></tr></thead>
-                  <tbody id="oficinasBody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-            <!-- Por Tipo -->
-            <div class="card">
-              <div class="card-header"><div class="card-title">🏷️ Por Tipo de Negocio</div></div>
-              <div class="tabla-wrap">
-                <table>
-                  <thead><tr><th>Tipo</th><th>Total</th><th>Tasa%</th><th>S/ Riesgo</th></tr></thead>
-                  <tbody id="tiposBody"></tbody>
-                </table>
-              </div>
-            </div>
-
-            <!-- Perfil Lealtad -->
-            <div class="card">
-              <div class="card-header"><div class="card-title">💎 Perfil de Lealtad</div></div>
-              <div class="tabla-wrap">
-                <table>
-                  <thead><tr><th>Tramo</th><th>Total</th><th>Tasa%</th><th>S/ Riesgo</th><th>Recomendación</th></tr></thead>
-                  <tbody id="lealtadBody"></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Segmentación Ticket -->
-          <div class="card" style="margin-bottom:20px;">
-            <div class="card-header"><div class="card-title">💰 Segmentación por Ticket</div></div>
-            <div class="tabla-wrap">
-              <table>
-                <thead><tr><th>Segmento</th><th>Total</th><th>Tasa%</th><th>S/ Riesgo</th><th>S/ Sano</th><th>S/ Total</th></tr></thead>
-                <tbody id="ticketsBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- Base Detallada con búsqueda -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">📋 Base Detallada</div>
-              <input type="text" id="baseSearch" placeholder="Buscar establecimiento..." oninput="filtrarBase(this.value)"
-                style="padding:6px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;width:240px;">
-            </div>
-            <div class="tabla-wrap" style="max-height:400px;overflow-y:auto;">
-              <table>
-                <thead><tr><th>Licencia</th><th>Establecimiento</th><th>Distrito</th><th>Oficina</th><th>Estado</th><th>Ticket S/</th><th>Períodos</th><th>Meses Δ</th><th>Lealtad</th></tr></thead>
-                <tbody id="baseBody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -845,7 +722,7 @@ function irA(panel){
 function iniciarDashboard(){
   var hoy = getTodayStr();
   // Cobros de hoy
-  db.collection('cobros_lotes').where('fecha','==',hoy).onSnapshot(function(snap){
+  db.collection('cobros_lotes').where('fecha','==',hoy).get().then(function(snap){
     var total = 0, cant = 0, lics = 0;
     snap.forEach(function(doc){
       var d = doc.data();
@@ -872,13 +749,13 @@ function iniciarDashboard(){
       html += '</div>';
     });
     document.getElementById('dashUltimosCobros').innerHTML = html || '<div class="no-data">Sin cobros hoy</div>';
-  }, function(err){
-    document.getElementById('dashCobrosHoy').innerText = 'Error';
+  }).catch(function(err){
+    document.getElementById('dashCobrosHoy').innerText = '—';
     document.getElementById('dashCobrosCount').innerText = err.message;
   });
 
   // Agentes y mapa
-  db.collection('fichajes').where('fecha','==',hoy).onSnapshot(function(snap){
+  db.collection('fichajes').where('fecha','==',hoy).get().then(function(snap){
     var activos = 0, total = Object.keys(USUARIOS).length;
     var html = '';
     snap.forEach(function(doc){
@@ -1332,218 +1209,6 @@ window.onMapsLoaded = function(){ console.log('Maps listo'); };
 // ============================================================
 // ARRANCAR
 // ============================================================
-// ============================================================
-// ANÁLISIS FINANCIERO — Procesar Excel subido por el usuario
-// ============================================================
-var _analisisData = {};
-
-function cargarAnalisisExcel(input){
-  var file = input.files[0];
-  if(!file) return;
-  document.getElementById('analisisStatus').innerText = '⏳ Procesando...';
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var wb = XLSX.read(e.target.result, {type:'array'});
-      _analisisData = {};
-
-      // Leer cada hoja
-      wb.SheetNames.forEach(function(name){
-        var ws = wb.Sheets[name];
-        _analisisData[name] = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-      });
-
-      document.getElementById('analisisStatus').innerText = '✅ Cargado: '+file.name;
-      renderAnalisis();
-    } catch(e){
-      document.getElementById('analisisStatus').innerText = '❌ Error: '+e.message;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function renderAnalisis(){
-  document.getElementById('analisisKPIs').style.display = 'block';
-
-  // RESUMEN — fila 2 = período, fila 4 en adelante = datos
-  var resumen = _analisisData['Resumen'] || [];
-  document.getElementById('analisisPeriodo').innerText = (resumen[1]||[])[0]||'';
-
-  // Buscar filas de indicadores
-  var kpiMap = {};
-  for(var i=4;i<resumen.length;i++){
-    var r = resumen[i]; if(!r||!r[0]) continue;
-    kpiMap[String(r[0]).trim()] = r;
-  }
-  var kpiDefs = [
-    {key:'Total Cartera',color:'var(--azul)'},
-    {key:'Churn Crítico',color:'#dc2626'},
-    {key:'Riesgo Rescatable',color:'#d97706'},
-    {key:'Fidelizada + F.Adelantada',color:'#16a34a'},
-    {key:'Total en Alerta',color:'#7c3aed'},
-  ];
-  var html = '';
-  kpiDefs.forEach(function(k){
-    var row = null;
-    Object.keys(kpiMap).forEach(function(key){
-      if(key.toUpperCase().indexOf(k.key.toUpperCase().slice(0,8))>-1) row = kpiMap[key];
-    });
-    var n = row ? row[1] : '—';
-    var pct = row ? (row[2]||'') : '';
-    var monto = row ? (row[3]||'') : '';
-    html += '<div class="stat-card" style="border-top:3px solid '+k.color+';">';
-    html += '<div class="stat-label">'+k.key+'</div>';
-    html += '<div class="stat-value" style="font-size:22px;color:'+k.color+';">'+n+'</div>';
-    html += '<div style="font-size:11px;color:var(--gris-texto);">'+pct+(monto?' · S/ '+Number(monto).toFixed(0):'')+'</div>';
-    html += '</div>';
-  });
-  document.getElementById('analisisCards').innerHTML = html;
-
-  // TOP RIESGO — col: 0=#, 1=ID, 2=Estab, 3=Dist, 4=Oficina, 5=Tipo, 6=S/, 7=MesesΔ, 8=Urgencia
-  var topRiesgo = _analisisData['Top Riesgo'] || [];
-  var trHtml = '';
-  var count = 0;
-  for(var i=2;i<topRiesgo.length;i++){
-    var r = topRiesgo[i]; if(!r[0]&&!r[1]) continue;
-    var urgencia = String(r[8]||'');
-    var color = urgencia==='CRÍTICO'?'var(--rojo)':'var(--amarillo)';
-    trHtml += '<tr>';
-    trHtml += '<td><strong>'+r[0]+'</strong></td>';
-    trHtml += '<td style="font-size:12px;color:var(--azul);">'+r[1]+'</td>';
-    trHtml += '<td style="font-size:12px;">'+r[2]+'</td>';
-    trHtml += '<td style="font-size:11px;">'+r[3]+'</td>';
-    trHtml += '<td style="font-size:11px;color:var(--gris-texto);">'+r[4]+'</td>';
-    trHtml += '<td style="font-size:11px;">'+String(r[5]||'').slice(0,30)+'</td>';
-    trHtml += '<td><strong style="color:var(--rojo);">S/ '+Number(r[6]||0).toFixed(2)+'</strong></td>';
-    trHtml += '<td style="color:var(--rojo);font-weight:700;">'+r[7]+'</td>';
-    trHtml += '<td><span class="badge" style="background:'+color+'22;color:'+color+';">'+urgencia+'</span></td>';
-    trHtml += '</tr>';
-    count++;
-  }
-  document.getElementById('topRiesgoBody').innerHTML = trHtml;
-  document.getElementById('topRiesgoBadge').innerText = count+' establecimientos';
-
-  // POR DISTRITO — col: 0=Dist,1=ChCrit,2=ChRecup,3=Riesgo,4=Fidel,5=FAde,6=Total,7=Alerta,8=Tasa%,9=S/Riesgo,10=S/Sano
-  var distritos = _analisisData['Por Distrito'] || [];
-  var dHtml = '';
-  for(var i=2;i<distritos.length;i++){
-    var r = distritos[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
-    var tasa = String(r[8]||''); var tasaNum = parseFloat(tasa)||0;
-    var c = tasaNum>40?'var(--rojo)':tasaNum>30?'var(--amarillo)':'var(--verde)';
-    dHtml += '<tr><td><strong>'+r[0]+'</strong></td><td>'+r[6]+'</td>';
-    dHtml += '<td>'+r[7]+'</td>';
-    dHtml += '<td><span style="color:'+c+';font-weight:700;">'+tasa+'</span></td>';
-    dHtml += '<td>S/ '+Number(r[9]||0).toFixed(0)+'</td></tr>';
-  }
-  document.getElementById('distritosBody').innerHTML = dHtml;
-
-  // POR OFICINA — col: 0=Ofic,1=Churn,2=ChCrit,3=ChRecup,4=Riesgo,5=Fidel,6=Total,7=TasaAlerta%,8=S/Riesgo
-  var oficinas = _analisisData['Por Oficina'] || [];
-  var oHtml = '';
-  for(var i=2;i<oficinas.length;i++){
-    var r = oficinas[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
-    oHtml += '<tr><td><strong>'+r[0]+'</strong></td><td>'+r[6]+'</td>';
-    oHtml += '<td>'+r[1]+'</td>';
-    oHtml += '<td style="color:var(--rojo);font-weight:700;">'+r[7]+'</td>';
-    oHtml += '<td>S/ '+Number(r[8]||0).toFixed(0)+'</td></tr>';
-  }
-  document.getElementById('oficinasBody').innerHTML = oHtml;
-
-  // POR TIPO — col: 0=Tipo,6=Total,7=Alerta,8=Tasa%,9=S/Riesgo
-  var tipos = _analisisData['Por Tipo'] || [];
-  var tHtml = '';
-  for(var i=2;i<tipos.length;i++){
-    var r = tipos[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
-    tHtml += '<tr><td style="font-size:11px;">'+String(r[0]).slice(0,45)+'</td>';
-    tHtml += '<td>'+r[6]+'</td>';
-    tHtml += '<td style="font-weight:700;">'+r[8]+'</td>';
-    tHtml += '<td>S/ '+Number(r[9]||0).toFixed(0)+'</td></tr>';
-  }
-  document.getElementById('tiposBody').innerHTML = tHtml;
-
-  // PERFIL LEALTAD — col: 0=Tramo,6=Total,7=Tasa%,8=S/Riesgo,9=S/Sano,10=Recomendación
-  var lealtad = _analisisData['Perfil Lealtad'] || [];
-  var lHtml = '';
-  for(var i=2;i<lealtad.length;i++){
-    var r = lealtad[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
-    lHtml += '<tr><td><strong>'+r[0]+'</strong></td>';
-    lHtml += '<td>'+r[6]+'</td>';
-    lHtml += '<td style="font-weight:700;">'+r[7]+'</td>';
-    lHtml += '<td>S/ '+Number(r[8]||0).toFixed(0)+'</td>';
-    lHtml += '<td style="font-size:11px;color:var(--gris-texto);">'+r[10]+'</td></tr>';
-  }
-  document.getElementById('lealtadBody').innerHTML = lHtml;
-
-  // SEGMENTO TICKET — col: 0=Seg,6=Total,7=Tasa%,8=S/Riesgo,9=S/Sano,10=S/Total
-  var tickets = _analisisData['Segmento Ticket'] || [];
-  var skHtml = '';
-  for(var i=2;i<tickets.length;i++){
-    var r = tickets[i]; if(!r[0]||String(r[0]).indexOf('TOTAL')>-1) continue;
-    skHtml += '<tr><td><strong>'+r[0]+'</strong></td>';
-    skHtml += '<td>'+r[6]+'</td>';
-    skHtml += '<td style="font-weight:700;">'+r[7]+'</td>';
-    skHtml += '<td style="color:var(--rojo);">S/ '+Number(r[8]||0).toFixed(0)+'</td>';
-    skHtml += '<td style="color:var(--verde);">S/ '+Number(r[9]||0).toFixed(0)+'</td>';
-    skHtml += '<td>S/ '+Number(r[10]||0).toFixed(0)+'</td></tr>';
-  }
-  document.getElementById('ticketsBody').innerHTML = skHtml;
-
-  // BASE DETALLADA
-  renderBase('');
-}
-
-var _baseData = [];
-function renderBase(filtro){
-  var base = _analisisData['Base Detallada'] || [];
-  _baseData = [];
-  for(var i=1; i<base.length; i++){
-    var r = base[i];
-    if(!r[0]) continue;
-    _baseData.push(r);
-  }
-  filtrarBase(filtro||'');
-}
-
-function filtrarBase(texto){
-  var q = (texto||'').toLowerCase();
-  var rows = _baseData.filter(function(r){
-    return !q || String(r[1]).toLowerCase().indexOf(q)>-1 || String(r[0]).indexOf(q)>-1;
-  });
-  var html = '';
-  rows.slice(0,100).forEach(function(r){
-    var estado = String(r[5]||'');
-    var color = estado==='Fidelizada'?'var(--verde)':estado.indexOf('Churn')>-1?'var(--rojo)':'var(--amarillo)';
-    html += '<tr>';
-    html += '<td style="font-size:11px;">'+r[0]+'</td>';
-    html += '<td style="font-size:12px;">'+r[1]+'</td>';
-    html += '<td style="font-size:11px;">'+r[2]+'</td>';
-    html += '<td style="font-size:11px;color:var(--gris-texto);">'+r[3]+'</td>';
-    html += '<td><span style="color:'+color+';font-size:11px;font-weight:600;">'+estado+'</span></td>';
-    html += '<td>S/ '+Number(r[7]).toFixed(0)+'</td>';
-    html += '<td>'+r[8]+'</td>';
-    html += '<td style="color:'+(Number(r[9])<0?'var(--rojo)':'var(--verde)')+';">'+r[9]+'m</td>';
-    html += '<td style="font-size:11px;">'+r[11]+'</td>';
-    html += '</tr>';
-  });
-  if(rows.length>100) html += '<tr><td colspan="9" style="text-align:center;color:var(--gris-texto);font-size:12px;padding:10px;">Mostrando 100 de '+rows.length+' registros. Usa el buscador para filtrar.</td></tr>';
-  document.getElementById('baseBody').innerHTML = html || '<tr><td colspan="9" class="no-data">Sin resultados</td></tr>';
-}
-
-function exportarAnalisisExcel(){
-  if(!_analisisData || Object.keys(_analisisData).length===0){
-    alert('Primero carga el archivo Excel de análisis');
-    return;
-  }
-  var wb = XLSX.utils.book_new();
-  // Exportar todas las hojas
-  Object.keys(_analisisData).forEach(function(nombre){
-    var ws = XLSX.utils.aoa_to_sheet(_analisisData[nombre]);
-    XLSX.utils.book_append_sheet(wb, ws, nombre.slice(0,31));
-  });
-  var fecha = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, 'GCI_Analisis_'+fecha+'.xlsx');
-}
-
 // ============================================================
 // FOTO MODAL
 // ============================================================
