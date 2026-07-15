@@ -446,6 +446,23 @@
       <div class="panel" id="panelEmpadronamientos">
         <div class="filtros">
           <div class="filtro-group">
+            <label>Mes</label>
+            <select id="empMesSel" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;">
+              <option value="ENERO">Enero</option>
+              <option value="FEBRERO">Febrero</option>
+              <option value="MARZO">Marzo</option>
+              <option value="ABRIL">Abril</option>
+              <option value="MAYO">Mayo</option>
+              <option value="JUNIO">Junio</option>
+              <option value="JULIO" selected>Julio</option>
+              <option value="AGOSTO">Agosto</option>
+              <option value="SEPTIEMBRE">Septiembre</option>
+              <option value="OCTUBRE">Octubre</option>
+              <option value="NOVIEMBRE">Noviembre</option>
+              <option value="DICIEMBRE">Diciembre</option>
+            </select>
+          </div>
+          <div class="filtro-group">
             <label>Ver agente</label>
             <select id="empAgentesel" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;" onchange="filtrarEmpAgente(this.value)">
               <option value="TODOS">Todos</option>
@@ -855,6 +872,9 @@ function iniciarDashboard(){
       html += '</div>';
     });
     document.getElementById('dashUltimosCobros').innerHTML = html || '<div class="no-data">Sin cobros hoy</div>';
+  }, function(err){
+    document.getElementById('dashCobrosHoy').innerText = 'Error';
+    document.getElementById('dashCobrosCount').innerText = err.message;
   });
 
   // Agentes y mapa
@@ -1068,6 +1088,16 @@ function getSheetCsvUrl(sheetName){
     'https://docs.google.com/spreadsheets/d/'+META_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(sheetName)
   );
 }
+async function fetchSheetCSV(sheetName){
+  var url = 'https://docs.google.com/spreadsheets/d/'+META_SHEETS_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(sheetName);
+  // Intentar directo primero
+  try{ var r=await fetch(url,{mode:'cors'}); if(r.ok) return await r.text(); }catch(e){}
+  // Proxy 1
+  try{ var r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url)); if(r.ok) return await r.text(); }catch(e){}
+  // Proxy 2
+  try{ var r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url)); if(r.ok) return await r.text(); }catch(e){}
+  throw new Error('No se pudo cargar la hoja: '+sheetName);
+}
 
 function parseCsvMeta(csv){
   var lines = csv.trim().split(/\r\n|\r|\n/);
@@ -1103,23 +1133,37 @@ function cargarSelectEmpAgentes(){
 
 async function cargarEmpadronamientos(){
   document.getElementById('empCards').innerHTML = '<div class="loading">Cargando empadronamientos...</div>';
-  var hojas = Object.values(META_EMAIL_HOJA).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  hojas.push(META_OFICINA_HOJA);
+  // Usar mes seleccionado
+  var mesEl = document.getElementById('empMesSel');
+  var hojaDelMes = mesEl ? mesEl.value : getHojaMesActual();
 
-  var promesas = hojas.map(async function(hoja){
-    try{
-      var r = await fetch(getSheetCsvUrl(hoja));
-      var csv = await r.text();
-      return {hoja:hoja, items:parseCsvMeta(csv)};
-    } catch(e){
-      return {hoja:hoja, items:[]};
+  try{
+    var csv = await fetchSheetCSV(hojaDelMes);
+    var items = parseCsvMeta(csv);
+
+    // Agrupar por agente (columna D)
+    _empData = {};
+    items.forEach(function(it){
+      var ag = it.agente || 'SIN AGENTE';
+      if(!_empData[ag]) _empData[ag] = [];
+      _empData[ag].push(it);
+    });
+
+    // Actualizar selector de agentes
+    var sel = document.getElementById('empAgentesel');
+    if(sel){
+      sel.innerHTML = '<option value="TODOS">Todos</option>';
+      Object.keys(_empData).sort().forEach(function(ag){
+        var opt = document.createElement('option');
+        opt.value = ag; opt.innerText = ag;
+        sel.appendChild(opt);
+      });
     }
-  });
 
-  var resultados = await Promise.all(promesas);
-  _empData = {};
-  resultados.forEach(function(r){ _empData[r.hoja] = r.items; });
-  renderEmpData('TODOS');
+    renderEmpData('TODOS');
+  } catch(e){
+    document.getElementById('empCards').innerHTML = '<div class="no-data">Error al cargar: '+e.message+'</div>';
+  }
 }
 
 function filtrarEmpAgente(hoja){
