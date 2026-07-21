@@ -493,7 +493,23 @@ select.form-input{cursor:pointer;}
     <div class="meta-header-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div style="font-size:13px;opacity:0.8;">EMPADRONAMIENTOS</div>
-        <button onclick="refrescarMeta()" id="btnRefrescarMeta" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:13px;padding:4px 10px;cursor:pointer;font-weight:700;">🔄 Actualizar</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="metaMesSel" onchange="refrescarMeta()" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:12px;padding:4px 8px;cursor:pointer;font-weight:700;">
+            <option value="ENERO">Enero</option>
+            <option value="FEBRERO">Febrero</option>
+            <option value="MARZO">Marzo</option>
+            <option value="ABRIL">Abril</option>
+            <option value="MAYO">Mayo</option>
+            <option value="JUNIO">Junio</option>
+            <option value="JULIO">Julio</option>
+            <option value="AGOSTO">Agosto</option>
+            <option value="SEPTIEMBRE">Septiembre</option>
+            <option value="OCTUBRE">Octubre</option>
+            <option value="NOVIEMBRE">Noviembre</option>
+            <option value="DICIEMBRE">Diciembre</option>
+          </select>
+          <button onclick="refrescarMeta()" id="btnRefrescarMeta" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:13px;padding:4px 10px;cursor:pointer;font-weight:700;">🔄</button>
+        </div>
       </div>
       <div class="meta-pct" id="metaPct">0%</div>
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
@@ -2014,6 +2030,8 @@ var META_OFICINA_HOJA = 'OFICINA';
 
 // Obtener nombre de la hoja del mes actual (JULIO, AGOSTO, etc.)
 function getHojaMesActual(){
+  var sel = document.getElementById('metaMesSel');
+  if(sel && sel.value) return sel.value;
   var meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
                'JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
   return meses[new Date().getMonth()];
@@ -2164,7 +2182,13 @@ function metaRenderAdmin(agenteSel){
 
 function refrescarMeta(){
   var btn = document.getElementById('btnRefrescarMeta');
-  if(btn){ btn.innerText='⏳ Cargando...'; btn.disabled=true; }
+  if(btn){ btn.innerText='⏳'; btn.disabled=true; }
+  // Seleccionar mes actual si no hay selección
+  var sel = document.getElementById('metaMesSel');
+  if(sel && !sel.value){
+    var meses = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+    sel.value = meses[new Date().getMonth()];
+  }
   _metaCache = {};
   var botonesEl = document.getElementById('metaBotonesAgentes');
   if(botonesEl) botonesEl.innerHTML='';
@@ -2232,7 +2256,11 @@ function loadMeta(){
           // Nueva estructura: una hoja por mes, col D = agente
           var porAgente = {};
           res.items.forEach(function(item){
-            var ag = item.agente || 'SIN AGENTE';
+            // Normalizar nombre: "Juan H." → "JUAN", "Pedro T." → "PEDRO"
+            var agRaw = (item.agente || 'SIN AGENTE').trim();
+            var ag = agRaw.split(' ')[0].toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/gi,'');
+            if(!ag) ag = agRaw.toUpperCase();
+            item.agenteNombre = ag; // guardar nombre normalizado
             if(!porAgente[ag]) porAgente[ag] = [];
             porAgente[ag].push(item);
           });
@@ -2276,9 +2304,11 @@ function loadMeta(){
     fetch(getSheetCsvUrl(hojaDelMes2)).then(function(r){ return r.text(); }).then(function(csv){
       if(loadingEl) loadingEl.style.display='none';
       var todosItems = parseCsvMeta(csv);
-      // Filtrar por agente si tiene columna D, sino mostrar todos
+      // Filtrar por agente normalizando el nombre (Juan H. → JUAN)
       var items = todosItems.filter(function(it){
-        return !it.agente || it.agente === nombreAgente;
+        if(!it.agente) return true;
+        var agNorm = it.agente.trim().split(' ')[0].toUpperCase().replace(/[^A-ZÁÉÍÓÚÑ]/gi,'');
+        return agNorm === nombreAgente || it.agente.toUpperCase() === nombreAgente;
       });
       var pagado=items.reduce(function(s,x){ return s+(x.estado==='COBRADO'?x.tarifa:0); },0);
       var pct=Math.min(100,Math.round(pagado/META_GOAL*100));
