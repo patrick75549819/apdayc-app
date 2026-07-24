@@ -493,8 +493,7 @@ select.form-input{cursor:pointer;}
     <div class="meta-header-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div style="font-size:13px;opacity:0.8;">EMPADRONAMIENTOS</div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <select id="metaMesSel" onchange="refrescarMeta()" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:12px;padding:4px 8px;cursor:pointer;font-weight:700;">
+        <select id="metaMesSel" onchange="refrescarMeta()" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:12px;padding:4px 8px;cursor:pointer;font-weight:700;">
             <option value="ENERO">Enero</option>
             <option value="FEBRERO">Febrero</option>
             <option value="MARZO">Marzo</option>
@@ -508,8 +507,6 @@ select.form-input{cursor:pointer;}
             <option value="NOVIEMBRE">Noviembre</option>
             <option value="DICIEMBRE">Diciembre</option>
           </select>
-          <button onclick="refrescarMeta()" id="btnRefrescarMeta" style="background:rgba(255,255,255,0.2);border:none;border-radius:8px;color:white;font-size:13px;padding:4px 10px;cursor:pointer;font-weight:700;">🔄</button>
-        </div>
       </div>
       <div class="meta-pct" id="metaPct">0%</div>
       <div class="meta-progress-bar"><div class="meta-progress-fill" id="metaFill" style="width:0%"></div></div>
@@ -1969,6 +1966,12 @@ function initFirebase(){
             var isAdmin = ADMINS.indexOf(user.email.toLowerCase())>-1;
             initReporte(user.email, isAdmin);
             initFichaje(user.email, isAdmin);
+            // Seleccionar mes actual en Meta
+            var _selM = document.getElementById('metaMesSel');
+            if(_selM){
+              var _ms=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+              _selM.value = _ms[new Date().getMonth()];
+            }
             initCobros(user.email, isAdmin);
           } else {
             auth.signOut();
@@ -2235,14 +2238,13 @@ function loadMeta(){
   }
 
   if(esAdmin){
-    // Cargar hoja del mes actual (JULIO, AGOSTO, etc.)
+    // Cargar solo la hoja del mes seleccionado
     var hojaDelMes = getHojaMesActual();
     var hojasFetch = [
       fetch(getSheetCsvUrl(hojaDelMes)).then(function(r){ return r.text(); }).then(function(csv){
         return {hoja:hojaDelMes, items:parseCsvMeta(csv), goal:META_GOAL};
       }).catch(function(){ return {hoja:hojaDelMes, items:[], goal:META_GOAL}; })
     ];
-    // Mantener compatibilidad con hojas antiguas por agente
     hojasFetch.push(
       Promise.resolve({hoja:'_dummy', items:[], goal:0})
     );
