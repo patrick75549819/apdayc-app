@@ -2077,7 +2077,15 @@ function parseCsvMeta(csv){
     }
     cols.push(cur);
     var nombre=(cols[0]||'').replace(/[^\w\s\.\-\/áéíóúÁÉÍÓÚñÑ]/g,'').trim().toUpperCase();
-    var tarifa=parseFloat((cols[1]||'').replace(/[^0-9\.\,]/g,'').replace(',','.').trim())||0;
+    // Fix: S/ 1,000.00 → quitar S/ y espacios, luego quitar comas de miles
+    var tarifaStr = (cols[1]||'').replace(/S\/\s*/g,'').trim();
+    // Si tiene punto Y coma: formato 1,000.00 (coma=miles, punto=decimal)
+    if(tarifaStr.indexOf(',')>-1 && tarifaStr.indexOf('.')>-1){
+      tarifaStr = tarifaStr.replace(/,/g,''); // quitar comas de miles
+    } else if(tarifaStr.indexOf(',')>-1){
+      tarifaStr = tarifaStr.replace(',','.'); // coma como decimal
+    }
+    var tarifa = parseFloat(tarifaStr.replace(/[^0-9.]/g,''))||0;
     var estado=(cols[2]||'').replace(/[^a-zA-Z]/g,'').trim().toUpperCase();
     var agente=(cols[3]||'').trim().toUpperCase();
     if(nombre) items.push({nombre:nombre,tarifa:tarifa,estado:estado,agente:agente});
