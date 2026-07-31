@@ -257,6 +257,16 @@
     cursor: pointer;
   }
 
+  /* PESTAÑAS DISTRITO */
+  .dist-tab {
+    padding: 7px 14px; border: 1.5px solid var(--gris-borde);
+    border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; background: white; color: var(--gris-texto);
+    transition: all 0.15s;
+  }
+  .dist-tab:hover { background: var(--azul-light); color: var(--azul); border-color: var(--azul); }
+  .dist-tab.active { background: var(--azul); color: white; border-color: var(--azul); }
+
   /* LOADING */
   .loading { text-align: center; padding: 40px; color: var(--gris-texto); }
   .no-data { text-align: center; padding: 40px; color: var(--gris-texto); font-size: 13px; }
@@ -556,17 +566,26 @@
             <div><label style="font-size:11px;font-weight:600;color:var(--gris-texto);">Hasta</label>
             <input type="date" id="repDistHasta" style="width:100%;padding:8px;border:1.5px solid var(--gris-borde);border-radius:8px;font-size:13px;margin-top:4px;"></div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
-            <button class="btn-secondary" onclick="exportarPorDistrito('Surco')">📍 Surco</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Lima')">📍 Lima (Breña/SL/LV)</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('SJL')">📍 SJL (Rímac/EA)</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Lince')">📍 Lince</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Oxapampa')">📍 Oxapampa</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Huancayo')">📍 Huancayo</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Tarma')">📍 Tarma</button>
-            <button class="btn-secondary" onclick="exportarPorDistrito('Cañete')">📍 Cañete</button>
-            <button class="btn-excel" onclick="exportarTodosDistritos()" style="grid-column:span 4;">📥 Excel — Todos los distritos</button>
+          <!-- Pestañas de distritos -->
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;border-bottom:2px solid var(--gris-borde);padding-bottom:10px;">
+            <button class="dist-tab active" onclick="selDistTab(this,'Lima')">📍 Lima</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Breña')">📍 Breña</button>
+            <button class="dist-tab" onclick="selDistTab(this,'La Victoria')">📍 La Victoria</button>
+            <button class="dist-tab" onclick="selDistTab(this,'San Luis')">📍 San Luis</button>
+            <button class="dist-tab" onclick="selDistTab(this,'SJL')">📍 San Juan de Lurigancho</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Rimac')">📍 Rímac</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Agustino')">📍 El Agustino</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Lince')">📍 Lince</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Surco')">📍 Surco</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Oxapampa')">📍 Oxapampa</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Huancayo')">📍 Huancayo</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Tarma')">📍 Tarma</button>
+            <button class="dist-tab" onclick="selDistTab(this,'Cañete')">📍 Cañete</button>
           </div>
+          <div id="distTabContenido" style="margin-bottom:12px;">
+            <div style="font-size:13px;color:var(--gris-texto);padding:10px 0;">Selecciona un distrito para ver y descargar su reporte.</div>
+          </div>
+          <button class="btn-excel" onclick="exportarTodosDistritos()" style="width:100%;">📥 Excel — Todos los distritos en un archivo</button>
         </div>
       </div>
 
@@ -989,7 +1008,13 @@ function parseCsvMeta(csv){
     }
     cols.push(cur);
     var nombre=(cols[0]||'').trim().toUpperCase();
-    var tarifa=parseFloat((cols[1]||'').replace(/[^0-9.,]/g,'').replace(',','.'))||0;
+    var tarifaStr = (cols[1]||'').replace(/S\/\s*/g,'').trim();
+    if(tarifaStr.indexOf(',')>-1 && tarifaStr.indexOf('.')>-1){
+      tarifaStr = tarifaStr.replace(/,/g,'');
+    } else if(tarifaStr.indexOf(',')>-1){
+      tarifaStr = tarifaStr.replace(',','.');
+    }
+    var tarifa = parseFloat(tarifaStr.replace(/[^0-9.]/g,''))||0;
     var estado=(cols[2]||'').replace(/[^a-zA-Z]/g,'').trim().toUpperCase();
     if(nombre) items.push({nombre:nombre, tarifa:tarifa, estado:estado});
   }
@@ -1303,15 +1328,51 @@ function exportarReporteJornadas(){
 // EXPORTAR POR DISTRITO
 // ============================================================
 var DISTRITOS_MAP = {
-  'Surco':['surco','santiago de surco'],
-  'Lima':['lima','breña','brena','san luis','la victoria','victoria'],
-  'SJL':['sjl','san juan de lurigancho','rimac','rímac','el agustino','agustino'],
+  'Lima':['lima centro','lima cercado','cercado de lima'],
+  'Breña':['breña','brena'],
+  'La Victoria':['la victoria','victoria'],
+  'San Luis':['san luis'],
+  'SJL':['san juan de lurigancho','sjl'],
+  'Rimac':['rimac','rímac'],
+  'Agustino':['el agustino','agustino'],
   'Lince':['lince'],
+  'Surco':['surco','santiago de surco'],
   'Oxapampa':['oxapampa'],
   'Huancayo':['huancayo'],
   'Tarma':['tarma'],
   'Cañete':['cañete','canete']
 };
+
+function selDistTab(btn, distrito){
+  // Activar pestaña
+  document.querySelectorAll('.dist-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  // Mostrar preview con botón de descarga
+  var contenido = document.getElementById('distTabContenido');
+  var nombres = {
+    'Lima':'Lima (Centro/Cercado)',
+    'Breña':'Breña',
+    'La Victoria':'La Victoria',
+    'San Luis':'San Luis',
+    'SJL':'San Juan de Lurigancho',
+    'Rimac':'Rímac',
+    'Agustino':'El Agustino',
+    'Lince':'Lince',
+    'Surco':'Santiago de Surco',
+    'Oxapampa':'Oxapampa',
+    'Huancayo':'Huancayo',
+    'Tarma':'Tarma',
+    'Cañete':'Cañete'
+  };
+  contenido.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--azul-light);border-radius:10px;">' +
+    '<div>' +
+    '<div style="font-size:14px;font-weight:700;color:var(--azul-dark);">📍 '+( nombres[distrito]||distrito)+'</div>' +
+    '<div style="font-size:12px;color:var(--gris-texto);">Cobros registrados en el período seleccionado</div>' +
+    '</div>' +
+    '<button class="btn-excel" onclick="exportarPorDistrito(\'' + distrito + '\')">📥 Descargar Excel</button>' +
+    '</div>';
+}
 
 async function exportarPorDistrito(distrito){
   var desde = document.getElementById('repDistDesde').value;
