@@ -1167,7 +1167,7 @@ else if(m2V<=400)p=0.276; else if(m2V<=500)p=0.252; else if(m2V<=600)p=0.24;
 else if(m2V<=800)p=0.222; else if(m2V<=1000)p=0.198; else if(m2V<=1500)p=0.168;
 else if(m2V<=2000)p=0.138;
 }
-let aforoB = (val * 0.60).toFixed(0);
+let aforoB = (val * p).toFixed(2);
 let horasC = (h * d);
 colA = (giroVal=="Gimnasio") ? Number(nivelGimnasio.value) : 0.35;
 colB = val + ' X ' + (p*100).toFixed(1) + '% = ' + aforoB;
